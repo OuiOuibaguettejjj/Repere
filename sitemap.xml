@@ -21,4 +21,7 @@
 <url><loc>https://repere.repere.workers.dev/conversion/volume/</loc></url>
 <url><loc>https://repere.repere.workers.dev/conversion/temperature/</loc></url>
 <url><loc>https://repere.repere.workers.dev/comparateur/prix-unitaire/</loc></url>
+<url><loc>https://repere.repere.workers.dev/outil/moyenne/</loc></url>
+<url><loc>https://repere.repere.workers.dev/outil/ratio/</loc></url>
+<url><loc>https://repere.repere.workers.dev/outil/cout-km/</loc></url>
 </urlset>
