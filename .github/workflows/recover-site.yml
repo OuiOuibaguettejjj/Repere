@@ -19,7 +19,7 @@ jobs:
 
       - name: Recover HTML and CSS from known-good version
         env:
-          BASE_URL: https://3c44639a-simulateur.repere.workers.dev
+          BASE_URL: https://89308f06-simulateur.repere.workers.dev
         run: |
           node <<'NODE'
           const fs = require('fs');
