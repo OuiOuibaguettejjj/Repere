@@ -11,7 +11,8 @@
         $("ey").textContent=tool.ey||"";
         $("title").textContent=tool.title||"";
         $("intro").textContent=tool.intro||"";
-        $("fields").innerHTML=tool.fields();
+        const renderedFields=typeof tool.fields==="function"?tool.fields():"";
+        if(renderedFields) $("fields").innerHTML=renderedFields;
         $("source").textContent=tool.source||"";
         document.title=(tool.title||"Simulateur")+" | Simulateur";
       }catch(error){
