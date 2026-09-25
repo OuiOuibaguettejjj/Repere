@@ -123,6 +123,65 @@ jobs:
           }
           NODE
 
+      - name: Smoke-test every calculator in Chromium
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
+          python3 -m http.server 4173 --directory public >/tmp/simulateur-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID' EXIT
+          sleep 2
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('playwright');
+
+          function walk(dir, out=[]) {
+            for (const e of fs.readdirSync(dir,{withFileTypes:true})) {
+              const p=dir+'/'+e.name;
+              if(e.isDirectory()) walk(p,out);
+              else if(e.isFile() && p.endsWith('.html') && p.startsWith('public/outil/')) out.push(p);
+            }
+            return out;
+          }
+
+          (async()=>{
+            const files=walk('public');
+            const browser=await chromium.launch({headless:true});
+            const errors=[];
+            for(const file of files){
+              const route='/'+file.slice('public/outil/'.length).replace(/\/index\.html$/,'/');
+              const page=await browser.newPage();
+              const consoleErrors=[];
+              const pageErrors=[];
+              page.on('console',m=>{if(m.type()==='error') consoleErrors.push(m.text())});
+              page.on('pageerror',e=>pageErrors.push(String(e)));
+              try{
+                const response=await page.goto('http://127.0.0.1:4173/outil/'+file.slice('public/outil/'.length),{waitUntil:'load',timeout:10000});
+                if(!response || response.status()!==200) errors.push(file+': HTTP '+(response&&response.status()));
+                const title=await page.title();
+                if(!title) errors.push(file+': empty title');
+                if(await page.locator('button').count()===0) errors.push(file+': no button');
+                if(file.includes('/outil/') && await page.locator('script[src="/simulateurs.js"]').count()>0){
+                  const shared=await page.evaluate(()=>!!window.Simulateurs);
+                  if(!shared) errors.push(file+': shared Simulateurs runtime missing');
+                }
+                const buttons=page.locator('button');
+                const n=await buttons.count();
+                for(let i=0;i<n;i++){
+                  try{await buttons.nth(i).click({timeout:1500}); await page.waitForTimeout(30);}catch(e){}
+                }
+                if(consoleErrors.length) errors.push(file+': console.error: '+consoleErrors.join(' | '));
+                if(pageErrors.length) errors.push(file+': pageerror: '+pageErrors.join(' | '));
+              }catch(e){errors.push(file+': '+e.message)}
+              await page.close();
+            }
+            await browser.close();
+            console.log('Smoke-tested '+files.length+' calculator pages.');
+            if(errors.length){console.error(errors.join('\n'));process.exit(1)}
+          })();
+          NODE
+
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v4
         with:
