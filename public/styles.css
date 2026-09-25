@@ -65,7 +65,7 @@ footer{border-top:1px solid var(--ink);padding:30px 0;background:#eee9df}
 .related-tools{max-width:1180px;margin:45px auto 0;padding:0 24px}
 .related-tools>div:first-child{border-top:1px solid var(--ink);padding-top:24px}
 .related-tools h2{margin:0;font-size:2rem;letter-spacing:-.05em}
-.related-links{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+.related-links{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
 .related-link{display:block;border:1px solid var(--ink);border-radius:11px;background:var(--card);padding:15px;font-weight:900;text-decoration:none}.related-link strong{display:block;line-height:1.25}.related-link span{display:block;margin-top:6px;color:var(--muted);font-size:.82rem;font-weight:500;line-height:1.4}.related-link:hover span{color:inherit}
 .related-link:hover{background:var(--accent);color:#fff;transform:translateY(-2px)}
 .status-note{font-size:.82rem;color:var(--muted);margin-top:10px}
