@@ -38,7 +38,7 @@ jobs:
 
           for (const file of files) {
             const html = fs.readFileSync(file, 'utf8');
-            if (!/<title>[^<]+<\\/title>/i.test(html)) errors.push(file + ': missing <title>');
+            if (!/<title>[^<]+<\/title>/i.test(html)) errors.push(file + ': missing <title>');
             const canonical = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
             if (!canonical) errors.push(file + ': missing canonical');
             else {
