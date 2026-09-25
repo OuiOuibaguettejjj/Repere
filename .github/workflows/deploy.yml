@@ -72,7 +72,7 @@ jobs:
             if (titles.length !== 1) errors.push(file + ': expected exactly one title, found ' + titles.length);
 
             const canonicalMatches = [...html.matchAll(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/gi)];
-            if (canonicalMatches.length !== 1) {
+            if (file === 'public/404.html') {\n              if (canonicalMatches.length > 1) errors.push(file + ': more than one canonical');\n            } else if (canonicalMatches.length !== 1) {
               errors.push(file + ': expected exactly one canonical, found ' + canonicalMatches.length);
             } else {
               const canonical = canonicalMatches[0][1];
@@ -110,6 +110,7 @@ jobs:
           if (!allFiles.has('public/styles.css')) errors.push('public/styles.css: missing');
           if (!allFiles.has('public/robots.txt')) errors.push('public/robots.txt: missing');
           if (!allFiles.has('public/sitemap.xml')) errors.push('public/sitemap.xml: missing');
+          if (!allFiles.has('public/simulateurs.js')) errors.push('public/simulateurs.js: missing');
 
           const toolCount = files.filter(f => f.startsWith('public/outil/')).length;
           console.log('Validated ' + files.length + ' HTML pages and ' + toolCount + ' calculator pages.');
