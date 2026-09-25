@@ -51,7 +51,7 @@ jobs:
 
           function existsPublicPath(urlPath) {
             if (urlPath === '/') return allFiles.has('public/index.html');
-            const clean = urlPath.replace(/^\\//, '').replace(/\\/$/, '');
+            const clean = urlPath.replace(/^\//, '').replace(/\/$/, '');
             if (allFiles.has('public/' + clean)) return true;
             if (allFiles.has('public/' + clean + '/index.html')) return true;
             return false;
@@ -63,12 +63,12 @@ jobs:
 
             if (html.includes('--- TRUNCATED ---')) errors.push(file + ': truncation marker');
             if (!/^<!doctype html>/i.test(html.trim())) errors.push(file + ': missing doctype');
-            if (!/<html\\b[^>]*>/i.test(html)) errors.push(file + ': missing html element');
-            if (!/<head\\b[^>]*>/i.test(html)) errors.push(file + ': missing head');
-            if (!/<body\\b[^>]*>/i.test(html)) errors.push(file + ': missing body');
-            if (!/<\\/html>/i.test(html)) errors.push(file + ': missing closing html tag');
+            if (!/<html\b[^>]*>/i.test(html)) errors.push(file + ': missing html element');
+            if (!/<head\b[^>]*>/i.test(html)) errors.push(file + ': missing head');
+            if (!/<body\b[^>]*>/i.test(html)) errors.push(file + ': missing body');
+            if (!/<\/html>/i.test(html)) errors.push(file + ': missing closing html tag');
 
-            const titles = [...html.matchAll(/<title>[^<]+<\\/title>/gi)];
+            const titles = [...html.matchAll(/<title>[^<]+<\/title>/gi)];
             if (titles.length !== 1) errors.push(file + ': expected exactly one title, found ' + titles.length);
 
             const canonicalMatches = [...html.matchAll(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/gi)];
@@ -86,11 +86,11 @@ jobs:
 
             if (file.startsWith('public/outil/')) {
               if (html.length < 1000) errors.push(file + ': calculator page suspiciously small (' + html.length + ' bytes)');
-              if (!/<script\\b/i.test(html)) errors.push(file + ': calculator has no JavaScript');
-              if (!/<button\\b/i.test(html)) errors.push(file + ': calculator has no button');
+              if (!/<script\b/i.test(html)) errors.push(file + ': calculator has no JavaScript');
+              if (!/<button\b/i.test(html)) errors.push(file + ': calculator has no button');
             }
 
-            for (const match of html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\\/script>/gi)) {
+            for (const match of html.matchAll(/<script(?:\\s[^>]*)?>([\\s\\S]*?)<\/script>/gi)) {
               const js = match[1].trim();
               if (!js) continue;
               try { new vm.Script(js, {filename:file}); }
