@@ -212,6 +212,8 @@ jobs:
 
       - name: Smoke-test production after deploy
         run: |
+          npm install --no-save playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null 2>&1
           node <<'NODE'
           const fs = require('fs');
           const { chromium } = require('playwright');
