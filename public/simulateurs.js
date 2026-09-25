@@ -23,7 +23,7 @@
       const tool=window.TOOL;
       if(!tool){ $("result").textContent="Calculateur indisponible."; return; }
       try{
-        $("result").innerHTML=tool.calc.call({$,euro,num,n:id=>Number($(id)?.value||0)});
+        $("result").innerHTML=tool.calc.call({$,euro,num});
       }catch(error){
         $("result").textContent="Valeurs invalides ou insuffisantes.";
         console.error("Simulateurs.calc:",error);
