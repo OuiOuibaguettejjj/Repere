@@ -112,6 +112,10 @@ jobs:
           if (!allFiles.has('public/styles.css')) errors.push('public/styles.css: missing');
           if (!allFiles.has('public/robots.txt')) errors.push('public/robots.txt: missing');
           if (!allFiles.has('public/sitemap.xml')) errors.push('public/sitemap.xml: missing');
+          if (allFiles.has('public/simulateurs.js')) {
+            try { new vm.Script(fs.readFileSync('public/simulateurs.js','utf8'), {filename:'public/simulateurs.js'}); }
+            catch (e) { errors.push('public/simulateurs.js: JavaScript syntax error: ' + e.message); }
+          }
 
           const toolCount = files.filter(f => f.startsWith('public/outil/')).length;
           console.log('Validated ' + files.length + ' HTML pages and ' + toolCount + ' calculator pages.');
