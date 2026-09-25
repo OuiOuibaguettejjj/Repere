@@ -155,6 +155,26 @@ jobs:
             for(const file of files){
               const route='/'+file.slice('public/'.length).replace(/\/index\.html$/,'/');
               const page=await browser.newPage();
+          async function populate(page) {
+            await page.locator('input').evaluateAll((inputs) => {
+              for (const input of inputs) {
+                if (input.type === 'date') input.value = '2020-01-15';
+                else if (input.type === 'number') input.value = input.min && Number(input.min) > 10 ? input.min : '10';
+                else if (input.type !== 'hidden') input.value = 'test';
+                input.dispatchEvent(new Event('input', {bubbles:true}));
+                input.dispatchEvent(new Event('change', {bubbles:true}));
+              }
+            });
+            await page.locator('select').evaluateAll((selects) => {
+              for (const select of selects) {
+                if (select.options.length) {
+                  select.selectedIndex = 0;
+                  select.dispatchEvent(new Event('change', {bubbles:true}));
+                }
+              }
+            });
+          }
+
               await page.route('**/api/devises', route => route.fulfill({status:200, contentType:'application/json', body:JSON.stringify({date:'2026-09-25', rates:{EUR:1,USD:1.17,GBP:0.87,CHF:0.94}})}));
               const consoleErrors=[];
               const pageErrors=[];
@@ -166,7 +186,9 @@ jobs:
                 const title=await page.title();
                 if(!title) errors.push(file+': empty title');
                 if(file.startsWith('public/outil/') && await page.locator('button').count()===0) errors.push(file+': no button');
-                const buttons=page.locator('button');
+                await populate(page);
+              await populate(page);
+              const buttons=page.locator('button');
                 const n=file.startsWith('public/outil/') ? await buttons.count() : 0;
                 for(let i=0;i<n;i++){
                   try{await buttons.nth(i).click({timeout:1500}); await page.waitForTimeout(30);}catch(e){}
@@ -211,6 +233,26 @@ jobs:
             for(const file of files){
               const route='/'+file.slice('public/'.length).replace(/\/index\.html$/,'/');
               const page=await browser.newPage();
+          async function populate(page) {
+            await page.locator('input').evaluateAll((inputs) => {
+              for (const input of inputs) {
+                if (input.type === 'date') input.value = '2020-01-15';
+                else if (input.type === 'number') input.value = input.min && Number(input.min) > 10 ? input.min : '10';
+                else if (input.type !== 'hidden') input.value = 'test';
+                input.dispatchEvent(new Event('input', {bubbles:true}));
+                input.dispatchEvent(new Event('change', {bubbles:true}));
+              }
+            });
+            await page.locator('select').evaluateAll((selects) => {
+              for (const select of selects) {
+                if (select.options.length) {
+                  select.selectedIndex = 0;
+                  select.dispatchEvent(new Event('change', {bubbles:true}));
+                }
+              }
+            });
+          }
+
               const consoleErrors=[];
               const pageErrors=[];
               page.on('console',m=>{if(m.type()==='error') consoleErrors.push(m.text())});
