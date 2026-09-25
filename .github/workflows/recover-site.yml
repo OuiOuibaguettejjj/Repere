@@ -78,7 +78,7 @@ jobs:
             const s = fs.readFileSync(file, "utf8");
             if (s.includes("--- TRUNCATED ---")) errors.push(file + ": truncation marker");
             if (!/^<!doctype html>/i.test(s.trim())) errors.push(file + ": missing doctype");
-            if (!/<html\\b[^>]*>/i.test(s) || !/<head\\b[^>]*>/i.test(s) || !/<body\\b[^>]*>/i.test(s) || !/<\\/html>/i.test(s)) {
+            if (!/<html\b[^>]*>/i.test(s) || !/<head\b[^>]*>/i.test(s) || !/<body\b[^>]*>/i.test(s) || !/<\/html>/i.test(s)) {
               errors.push(file + ": malformed document");
             }
             if (file.startsWith("public/outil/") && s.length < 1000) errors.push(file + ": calculator page too small");
