@@ -111,7 +111,7 @@ jobs:
 
           if (allFiles.has('public/sitemap.xml')) {
             const sitemap = fs.readFileSync('public/sitemap.xml', 'utf8');
-            const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\\/loc>/g)].map(m => m[1]);
+            const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
             const seen = new Set();
             for (const url of sitemapUrls) {
               if (seen.has(url)) errors.push('public/sitemap.xml: duplicate URL ' + url);
