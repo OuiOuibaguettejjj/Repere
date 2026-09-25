@@ -72,7 +72,9 @@ jobs:
             if (titles.length !== 1) errors.push(file + ': expected exactly one title, found ' + titles.length);
 
             const canonicalMatches = [...html.matchAll(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/gi)];
-            if (file === 'public/404.html') {\n              if (canonicalMatches.length > 1) errors.push(file + ': more than one canonical');\n            } else if (canonicalMatches.length !== 1) {
+            if (file === 'public/404.html') {
+              if (canonicalMatches.length > 1) errors.push(file + ': more than one canonical');
+            } else if (canonicalMatches.length !== 1) {
               errors.push(file + ': expected exactly one canonical, found ' + canonicalMatches.length);
             } else {
               const canonical = canonicalMatches[0][1];
