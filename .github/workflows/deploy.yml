@@ -256,7 +256,7 @@ jobs:
 
               const consoleErrors=[];
               const pageErrors=[];
-              page.on('console',m=>{if(m.type()==='error') consoleErrors.push(m.text())});
+              page.on('console',m=>{if(m.type()==='error' && !/cloudflareinsights|beacon\.min\.js/i.test(m.text())) consoleErrors.push(m.text())});
               page.on('pageerror',e=>pageErrors.push(String(e)));
               try{
                 const response=await page.goto('https://simulateur.site'+route,{waitUntil:'domcontentloaded',timeout:20000});
