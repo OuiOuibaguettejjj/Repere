@@ -44,7 +44,8 @@
         return;
       }
       try{
-        const result=tool.calc.call(helpers());
+        const ctx=helpers();
+        const result=tool.calc.call(ctx,ctx);
         const target=$("#result");
         if(target) target.innerHTML=result;
       }catch(error){
