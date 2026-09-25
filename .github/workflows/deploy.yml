@@ -187,7 +187,6 @@ jobs:
                 if(!title) errors.push(file+': empty title');
                 if(file.startsWith('public/outil/') && await page.locator('button').count()===0) errors.push(file+': no button');
                 await populate(page);
-              await populate(page);
               const buttons=page.locator('button');
                 const n=file.startsWith('public/outil/') ? await buttons.count() : 0;
                 for(let i=0;i<n;i++){
@@ -262,6 +261,7 @@ jobs:
                 if(!response || response.status()!==200) errors.push(file+': production HTTP '+(response&&response.status()));
                 if(!(await page.title())) errors.push(file+': production empty title');
                 if(file.startsWith('public/outil/')){
+                  await populate(page);
                   const buttons=page.locator('button');
                   const n=await buttons.count();
                   if(n===0) errors.push(file+': production no button');
