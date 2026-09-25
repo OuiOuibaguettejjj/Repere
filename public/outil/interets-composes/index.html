@@ -1,1 +1,169 @@
-<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Calculateur d'intérêts composés — Simulateur</title><meta name="description" content="Calculez la valeur future d'un capital avec intérêts composés, versements réguliers et taux annuel."><link rel="canonical" href="https://simulateur.site/outil/interets-composes/"><link rel="stylesheet" href="/styles.css"></head><body><header><div class="wrap nav"><a class="logo" href="/">Simulateur<span>.</span></a><nav class="navlinks"><a href="/calculateurs/">Calculateurs</a><a href="/conversions/">Conversions</a><a href="/comparateurs/">Comparateurs</a><a href="/a-propos/">À propos</a></nav></div></header><main><div class="wrap"><div class="breadcrumb"><a href="/argent/">Argent</a> · Intérêts composés</div><div class="tool"><h1>Intérêts composés</h1><p class="tool-intro">Estimez la valeur future d'un capital avec un rendement composé et des versements mensuels.</p><div class="fields"><div class="field"><label for="c">Capital initial (€)</label><input id="c" type="number" min="0" step="any" placeholder="5000"></div><div class="field"><label for="v">Versement mensuel (€)</label><input id="v" type="number" min="0" step="any" placeholder="200"></div><div class="field"><label for="t">Taux annuel (%)</label><input id="t" type="number" min="0" step="any" placeholder="5"></div><div class="field"><label for="y">Durée (années)</label><input id="y" type="number" min="0.01" step="any" placeholder="10"></div></div><button class="button-main" id="calc">Calculer</button><div class="result" id="r">—</div><div class="formula"><strong>Hypothèse</strong><p>Capitalisation mensuelle et versements en fin de mois. Le calcul ne tient pas compte des frais, impôts ni variation réelle d'un placement.</p></div></div></div></main><footer><div class="wrap"><a href="/">Accueil</a></div></footer><script>const c=document.querySelector('#c'),v=document.querySelector('#v'),t=document.querySelector('#t'),y=document.querySelector('#y'),r=document.querySelector('#r');document.querySelector('#calc').addEventListener('click',()=>{const C=Number(c.value),V=Number(v.value),T=Number(t.value),Y=Number(y.value);if(![C,V,T,Y].every(Number.isFinite)||C<0||V<0||T<0||Y<=0){r.textContent='Saisissez des valeurs valides.';return}const n=Math.round(Y*12),i=T/100/12,f=i?C*Math.pow(1+i,n)+V*((Math.pow(1+i,n)-1)/i):C+V*n,base=C+V*n;r.innerHTML='<strong>'+f.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2})+'</strong><br>Capital versé : '+base.toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2})+'<br>Gains estimés : '+(f-base).toLocaleString('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:2})})</script></body></html>
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calculateur d'intérêts composés — Simulateur</title>
+<meta name="description" content="Calculez votre capital futur avec intérêts composés, versements réguliers, rendement, frais et inflation. Visualisez les gains et l'effet de la capitalisation.">
+<link rel="canonical" href="https://simulateur.site/outil/interets-composes/">
+<link rel="stylesheet" href="/styles.css">
+<style>
+.compound-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}
+.compound-panel{padding:20px;border:1px solid var(--ink);border-radius:12px;background:#fff}
+.compound-panel h2{margin:0 0 16px;font-size:1.15rem;letter-spacing:-.03em}
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+.metric{padding:15px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.metric small{display:block;color:var(--muted);font-size:.78rem;margin-bottom:4px}
+.metric strong{font-size:1.18rem;line-height:1.2}
+.chart-wrap{margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#fff;overflow-x:auto}
+.chart{display:block;width:100%;min-width:560px;height:auto}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;color:var(--muted);font-size:.82rem}
+.legend span:before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--ink);margin-right:6px}
+.legend .gain:before{background:var(--accent)}
+.legend .paid:before{background:var(--accent2)}
+.breakdown{margin-top:20px}
+.breakdown summary{cursor:pointer;font-weight:900}
+.table-wrap{overflow-x:auto;margin-top:12px}
+.breakdown table{width:100%;border-collapse:collapse;font-size:.88rem}
+.breakdown th,.breakdown td{padding:8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.breakdown th:first-child,.breakdown td:first-child{text-align:left}
+.note{color:var(--muted);font-size:.84rem}
+@media(max-width:720px){.compound-grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav"><a class="logo" href="/">Simulateur<span>.</span></a><nav class="navlinks"><a href="/calculateurs/">Calculateurs</a><a href="/conversions/">Conversions</a><a href="/comparateurs/">Comparateurs</a><a href="/a-propos/">À propos</a></nav></div></header>
+<main>
+<div class="wrap">
+<div class="breadcrumb"><a href="/argent/">Argent</a> · Intérêts composés</div>
+<div class="tool">
+<div class="eyebrow">SIMULATEUR PHARE</div>
+<h1>Intérêts composés</h1>
+<p class="tool-intro">Projetez la croissance d'un capital avec vos versements réguliers. Visualisez ce que vous apportez, ce que le rendement produit et l'effet du temps.</p>
+
+<div class="compound-grid">
+<section class="compound-panel">
+<h2>Votre scénario</h2>
+<div class="row">
+<div class="field"><label for="capital">Capital initial (€)</label><input id="capital" type="number" min="0" step="100" value="5000"></div>
+<div class="field"><label for="versement">Versement mensuel (€)</label><input id="versement" type="number" min="0" step="10" value="200"></div>
+</div>
+<div class="row">
+<div class="field"><label for="rendement">Rendement annuel (%)</label><input id="rendement" type="number" min="0" max="100" step="0.1" value="7"></div>
+<div class="field"><label for="duree">Durée (années)</label><input id="duree" type="number" min="1" max="100" step="1" value="20"></div>
+</div>
+<details>
+<summary>Paramètres avancés</summary>
+<div class="row">
+<div class="field"><label for="frais">Frais annuels (%)</label><input id="frais" type="number" min="0" max="20" step="0.01" value="0"></div>
+<div class="field"><label for="hausse">Hausse annuelle du versement (%)</label><input id="hausse" type="number" min="0" max="20" step="0.1" value="0"></div>
+</div>
+<div class="field"><label for="inflation">Inflation annuelle (%)</label><input id="inflation" type="number" min="0" max="20" step="0.1" value="2"></div>
+<p class="note">Les frais réduisent le rendement utilisé dans la projection. L'inflation sert uniquement à estimer le pouvoir d'achat du capital final.</p>
+</details>
+<button class="button-main" id="calculate" type="button">Calculer</button>
+</section>
+
+<section class="compound-panel" aria-live="polite">
+<h2>Résultat après <span id="years-label">20</span> ans</h2>
+<div class="metrics">
+<div class="metric"><small>Capital final</small><strong id="final">—</strong></div>
+<div class="metric"><small>Gains cumulés</small><strong id="gains">—</strong></div>
+<div class="metric"><small>Total versé</small><strong id="paid">—</strong></div>
+<div class="metric"><small>Capital en euros constants</small><strong id="real">—</strong></div>
+<div class="metric"><small>Effet des frais</small><strong id="fees-impact">—</strong></div>
+<div class="metric"><small>Multiple du capital versé</small><strong id="multiple">—</strong></div>
+</div>
+<p class="note" id="crossover"></p>
+</section>
+</div>
+
+<div class="chart-wrap">
+<svg id="chart" class="chart" viewBox="0 0 760 280" role="img" aria-labelledby="chart-title chart-desc">
+<title id="chart-title">Évolution du capital</title><desc id="chart-desc">Graphique comparant les versements cumulés et le capital projeté.</desc>
+</svg>
+<div class="legend"><span class="gain">Capital projeté</span><span class="paid">Sommes versées</span></div>
+</div>
+
+<details class="breakdown">
+<summary>Voir le détail année par année</summary>
+<div class="table-wrap"><table><thead><tr><th>Année</th><th>Versé cumulés</th><th>Gains cumulés</th><th>Capital</th></tr></thead><tbody id="breakdown"></tbody></table></div>
+</details>
+
+<div class="formula">
+<strong>Hypothèses et limites</strong>
+<p>Capitalisation mensuelle et versements en fin de mois. Le rendement annuel est supposé constant et les frais sont appliqués comme une réduction du rendement annuel. L'inflation est utilisée pour convertir le capital final en euros constants.</p>
+<p>Il s'agit d'une projection mathématique, pas d'une prévision de performance. Les rendements réels peuvent varier et les résultats dépendent notamment du placement, de la fiscalité et des frais effectivement supportés. La fiscalité n'est pas intégrée car elle dépend de l'enveloppe utilisée (par exemple PEA, compte-titres ou assurance-vie).</p>
+</div>
+</div>
+</div>
+</main>
+<footer><div class="wrap"><div class="footerlinks"><a href="/">Accueil</a><a href="/mentions-legales/">Mentions légales</a><a href="/confidentialite/">Confidentialité</a><a href="/cgu/">CGU</a></div></div></footer>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const money=v=>Number(v).toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+  const pct=v=>Number(v).toLocaleString("fr-FR",{maximumFractionDigits:1})+" %";
+  const inputs=["capital","versement","rendement","duree","frais","hausse","inflation"].map($);
+
+  function value(el){return Number(el.value);}
+  function calculate(){
+    const C=value($("capital")), V=value($("versement")), R=value($("rendement")), Y=value($("duree"));
+    const F=value($("frais")), H=value($("hausse")), I=value($("inflation"));
+    if(![C,V,R,Y,F,H,I].every(Number.isFinite)||C<0||V<0||R<0||Y<1||Y>100||F<0||H<0||I<0||F>20||H>20||I>20){
+      $("final").textContent="Valeurs invalides"; return;
+    }
+    const months=Math.round(Y*12), netAnnual=Math.max(-99.99,R-F), monthlyRate=netAnnual/100/12;
+    let capital=C, paid=C, grossCapital=C, rows=[{year:0,paid:C,gains:0,capital:C}], crossover=null;
+    for(let m=1;m<=months;m++){
+      const year=Math.ceil(m/12);
+      const monthlyPayment=V*Math.pow(1+H/100,year-1);
+      capital+=monthlyPayment;
+      paid+=monthlyPayment;
+      capital*=1+monthlyRate;
+      const grossRate=R/100/12;
+      grossCapital=(grossCapital+monthlyPayment)*(1+grossRate);
+      if(m%12===0){
+        const gains=capital-paid;
+        rows.push({year:m/12,paid,gains,capital});
+        if(!crossover&&gains>paid-C)crossover=m/12;
+      }
+    }
+    const gains=capital-paid, real=capital/Math.pow(1+I/100,Y);
+    const feeImpact=Math.max(0,grossCapital-capital);
+    $("years-label").textContent=Y;
+    $("final").textContent=money(capital);
+    $("gains").textContent=money(gains);
+    $("paid").textContent=money(paid);
+    $("real").textContent=money(real);
+    $("fees-impact").textContent=F>0?money(feeImpact):"0 €";
+    $("multiple").textContent=(paid>0?capital/paid:0).toLocaleString("fr-FR",{maximumFractionDigits:2})+"×";
+    $("crossover").textContent=crossover
+      ?"À partir d'environ "+crossover+" ans, les gains cumulés dépassent les sommes versées depuis le départ."
+      :"Avec ces paramètres, les gains cumulés ne dépassent pas encore les sommes versées sur la durée choisie.";
+    drawChart(rows);
+    $("breakdown").innerHTML=rows.slice(1).map(r=>"<tr><td>"+r.year+"</td><td>"+money(r.paid)+"</td><td>"+money(r.gains)+"</td><td>"+money(r.capital)+"</td></tr>").join("");
+  }
+
+  function drawChart(rows){
+    const svg=$("chart"), width=760,height=280,pad={l:52,r:18,t:18,b:34};
+    const max=Math.max(...rows.map(r=>r.capital),1), innerW=width-pad.l-pad.r, innerH=height-pad.t-pad.b;
+    const x=i=>pad.l+(i/(rows.length-1||1))*innerW, y=v=>pad.t+(1-v/max)*innerH;
+    const path=(key)=>rows.map((r,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(r[key]).toFixed(1)).join(" ");
+    const labels=[0,Math.round((rows.length-1)/2),rows.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+    svg.innerHTML='<title id="chart-title">Évolution du capital</title><desc id="chart-desc">Capital projeté et sommes versées année après année.</desc>'+
+      '<line x1="'+pad.l+'" y1="'+y(0)+'" x2="'+(width-pad.r)+'" y2="'+y(0)+'" stroke="#d8d1c4"/>'+
+      '<path d="'+path("paid")+'" fill="none" stroke="#17483d" stroke-width="3"/>'+
+      '<path d="'+path("capital")+'" fill="none" stroke="#ff5a36" stroke-width="4"/>'+
+      labels.map(i=>'<text x="'+x(i)+'" y="'+(height-10)+'" text-anchor="middle" font-size="12" fill="#66635b">'+rows[i].year+" an"+(rows[i].year>1?"s":"")+"</text>").join("")+
+      '<text x="'+(width-pad.r)+'" y="'+(pad.t+12)+'" text-anchor="end" font-size="12" fill="#66635b">'+money(max)+'</text>';
+  }
+
+  inputs.forEach(el=>el.addEventListener("input",()=>{ if(el.id==="duree") $("years-label").textContent=el.value||"—"; }));
+  $("calculate").addEventListener("click",calculate);
+  calculate();
+})();
+</script>
+</body>
+</html>
