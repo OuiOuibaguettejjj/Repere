@@ -159,7 +159,7 @@
 
     const section=document.createElement('section');
     section.className='related-tools';
-    section.innerHTML='<div><div class="eyebrow">À VOIR AUSSI</div><h2>Calculs associés</h2><p class="muted">D'autres outils utiles dans le même parcours.</p><div class="related-links">'+
+    section.innerHTML='<div><div class="eyebrow">À VOIR AUSSI</div><h2>Calculs associés</h2><p class="muted">D\'autres outils utiles dans le même parcours.</p><div class="related-links">'+
       related.map(item=>'<a class="related-link" href="'+pathFor(item)+'"><strong>'+INFO[item][0]+'</strong><span>'+INFO[item][1]+'</span></a>').join('')+
       '</div></div>';
 
