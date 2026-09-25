@@ -24,8 +24,6 @@ function enhance(res, path) {
     const title = plain(existingTitle) || plain(h1Match ? h1Match[1] : "") || "Simulateur — calculateurs et outils gratuits";
     const description = plain(existingDesc) || plain((html.match(/<p[^>]*class=["'][^"']*(?:tool-intro|lead|muted)[^"']*["'][^>]*>([\s\S]*?)<\/p>/i) || [])[1] || "") || ("Utilisez gratuitement " + title.replace(/\s*\|\s*Simulateur.*$/i, "") + " sur Simulateur.");
     if (!/<title>/i.test(html)) html = html.replace("</head>", "<title>" + esc(title) + "</title></head>");
-    if (!/<html\\s+[^>]*lang=/i.test(html)) html = html.replace(/<html\\b/i, '<html lang="fr"');
-    if (!/<meta\\s+name=["\']viewport["\']/i.test(html)) html = html.replace("</head>", '<meta name="viewport" content="width=device-width, initial-scale=1"></head>");
     const canonicalTag = '<link rel="canonical" href="' + esc(url) + '">';
     if (/<link\s+[^>]*rel=["']canonical["']/i.test(html)) {
       html = html.replace(/<link\s+[^>]*rel=["']canonical["'][^>]*>/i, canonicalTag);
