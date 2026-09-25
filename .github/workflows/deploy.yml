@@ -190,7 +190,7 @@ jobs:
               const buttons=page.locator('button');
                 const n=file.startsWith('public/outil/') ? await buttons.count() : 0;
                 for(let i=0;i<n;i++){
-                  try{await buttons.nth(i).click({timeout:1500}); await page.waitForTimeout(30);}catch(e){}
+                  try{await buttons.nth(i).click({timeout:1500}); await page.waitForTimeout(30);}catch(e){errors.push(file+': button '+i+' click failed: '+e.message)}
                 }
                 if(consoleErrors.length) errors.push(file+': console.error: '+consoleErrors.join(' | '));
                 if(pageErrors.length) errors.push(file+': pageerror: '+pageErrors.join(' | '));
@@ -268,7 +268,7 @@ jobs:
                   const n=await buttons.count();
                   if(n===0) errors.push(file+': production no button');
                   for(let i=0;i<n;i++){
-                    try{await buttons.nth(i).click({timeout:2000}); await page.waitForTimeout(50);}catch(e){}
+                    try{await buttons.nth(i).click({timeout:2000}); await page.waitForTimeout(50);}catch(e){errors.push(file+': production button '+i+' click failed: '+e.message)}
                   }
                 }
                 if(consoleErrors.length) errors.push(file+': production console.error: '+consoleErrors.join(' | '));
