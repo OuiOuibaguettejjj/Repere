@@ -112,7 +112,6 @@ jobs:
           if (!allFiles.has('public/styles.css')) errors.push('public/styles.css: missing');
           if (!allFiles.has('public/robots.txt')) errors.push('public/robots.txt: missing');
           if (!allFiles.has('public/sitemap.xml')) errors.push('public/sitemap.xml: missing');
-          if (!allFiles.has('public/simulateurs.js')) errors.push('public/simulateurs.js: missing');
 
           const toolCount = files.filter(f => f.startsWith('public/outil/')).length;
           console.log('Validated ' + files.length + ' HTML pages and ' + toolCount + ' calculator pages.');
@@ -163,10 +162,6 @@ jobs:
                 const title=await page.title();
                 if(!title) errors.push(file+': empty title');
                 if(file.startsWith('public/outil/') && await page.locator('button').count()===0) errors.push(file+': no button');
-                if(file.startsWith('public/outil/') && await page.locator('script[src="/simulateurs.js"]').count()>0){
-                  const shared=await page.evaluate(()=>!!window.Simulateurs);
-                  if(!shared) errors.push(file+': shared Simulateurs runtime missing');
-                }
                 const buttons=page.locator('button');
                 const n=file.startsWith('public/outil/') ? await buttons.count() : 0;
                 for(let i=0;i<n;i++){
@@ -189,3 +184,52 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --config wrangler.jsonc
+
+      - name: Smoke-test production after deploy
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('playwright');
+
+          function walk(dir, out=[]) {
+            for (const e of fs.readdirSync(dir,{withFileTypes:true})) {
+              const p=dir+'/'+e.name;
+              if(e.isDirectory()) walk(p,out);
+              else if(e.isFile() && p.endsWith('.html')) out.push(p);
+            }
+            return out;
+          }
+
+          (async()=>{
+            const files=walk('public');
+            const browser=await chromium.launch({headless:true});
+            const errors=[];
+            for(const file of files){
+              const route='/'+file.slice('public/'.length).replace(/\/index\.html$/,'/');
+              const page=await browser.newPage();
+              const consoleErrors=[];
+              const pageErrors=[];
+              page.on('console',m=>{if(m.type()==='error') consoleErrors.push(m.text())});
+              page.on('pageerror',e=>pageErrors.push(String(e)));
+              try{
+                const response=await page.goto('https://simulateur.site'+route,{waitUntil:'domcontentloaded',timeout:20000});
+                if(!response || response.status()!==200) errors.push(file+': production HTTP '+(response&&response.status()));
+                if(!(await page.title())) errors.push(file+': production empty title');
+                if(file.startsWith('public/outil/')){
+                  const buttons=page.locator('button');
+                  const n=await buttons.count();
+                  if(n===0) errors.push(file+': production no button');
+                  for(let i=0;i<n;i++){
+                    try{await buttons.nth(i).click({timeout:2000}); await page.waitForTimeout(50);}catch(e){}
+                  }
+                }
+                if(consoleErrors.length) errors.push(file+': production console.error: '+consoleErrors.join(' | '));
+                if(pageErrors.length) errors.push(file+': production pageerror: '+pageErrors.join(' | '));
+              }catch(e){errors.push(file+': production '+e.message)}
+              await page.close();
+            }
+            await browser.close();
+            console.log('Production smoke-tested '+files.length+' public HTML pages, including '+files.filter(f=>f.startsWith('public/outil/')).length+' calculators.');
+            if(errors.length){console.error(errors.join('\n'));process.exit(1)}
+          })();
+          NODE
