@@ -46,7 +46,7 @@ function monthsBetween(a,b){let m=(b.getUTCFullYear()-a.getUTCFullYear())*12+(b.
 function euro(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n)}
 form.addEventListener('submit',e=>{e.preventDefault();err.hidden=true;result.hidden=true;
 const a=parse(document.getElementById('entry').value),b=parse(document.getElementById('exit').value),s12=Number(document.getElementById('s12').value),s3=Number(document.getElementById('s3').value);
-if(!a||!b||b<=a){err.textContent='Les dates doivent être valides et la date de rupture doit être postérieure à la date d'entrée.';err.hidden=false;return}
+if(!a||!b||b<=a){err.textContent='Les dates doivent être valides et la date de rupture doit être postérieure à la date d’entrée.';err.hidden=false;return}
 if(!(s12>0)||!(s3>0)){err.textContent='Renseignez deux salaires bruts mensuels valides.';err.hidden=false;return}
 const totalMonths=monthsBetween(a,b), ref=Math.max(s12,s3), years=totalMonths/12;
 const legal=ref*(Math.min(years,10)/4+Math.max(0,years-10)/3);
