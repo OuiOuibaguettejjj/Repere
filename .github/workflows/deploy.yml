@@ -39,8 +39,9 @@ jobs:
             if (u.origin !== 'https://simulateur.site') return true;
             const pathname = u.pathname;
             if (pathname === '/') return fs.existsSync('public/index.html');
-            if (!pathname.endsWith('/')) return false;
-            return fs.existsSync(path.join('public', pathname.replace(/^\//, ''), 'index.html'));
+            const routePath = pathname.replace(/^\//, '').replace(/\/$/, '');
+            if (!routePath) return fs.existsSync('public/index.html');
+            return fs.existsSync(path.join('public', routePath, 'index.html'));
           };
 
           for (const file of files) {
