@@ -89,4 +89,9 @@
   <url><loc>https://simulateur.site/outil/vitesse/</loc></url>
   <url><loc>https://simulateur.site/temps/</loc></url>
   <url><loc>https://simulateur.site/vie-quotidienne/</loc></url>
-<url><loc>https://simulateur.site/simulateurs/</loc></url></urlset>
+<url><loc>https://simulateur.site/simulateurs/</loc></url>  <url><loc>https://simulateur.site/salaire/</loc></url>
+  <url><loc>https://simulateur.site/immobilier/</loc></url>
+  <url><loc>https://simulateur.site/fiscalite/</loc></url>
+  <url><loc>https://simulateur.site/travail/</loc></url>
+  <url><loc>https://simulateur.site/retraite/</loc></url>
+</urlset>
