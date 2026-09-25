@@ -74,6 +74,22 @@
 <div class="metric"><small>Effet des frais</small><strong id="fees-impact">—</strong></div>
 <div class="metric"><small>Multiple du capital versé</small><strong id="multiple">—</strong></div>
 </div>
+<div class="takeaway">
+<div class="takeaway-title">À retenir</div>
+<div class="takeaway-grid">
+<div class="takeaway-item"><small>Capital final</small><strong id="take-final">—</strong></div>
+<div class="takeaway-item"><small>Gains</small><strong id="take-gains">—</strong></div>
+<div class="takeaway-item"><small>Effet de la capitalisation</small><strong id="take-effect">—</strong></div>
+</div>
+</div>
+<div class="scenario">
+<div class="scenario-title">Et si…</div>
+<div class="scenario-grid">
+<div class="scenario-item"><small>+50 € / mois</small><strong id="scenario-monthly">—</strong></div>
+<div class="scenario-item"><small>+1 point de rendement</small><strong id="scenario-rate">—</strong></div>
+</div>
+</div>
+</div>
 <p class="note" id="crossover"></p>
 </section>
 </div>
@@ -139,11 +155,29 @@
     $("real").textContent=money(real);
     $("fees-impact").textContent=F>0?money(feeImpact):"0 €";
     $("multiple").textContent=(paid>0?capital/paid:0).toLocaleString("fr-FR",{maximumFractionDigits:2})+"×";
+    $("take-final").textContent=money(capital);
+    $("take-gains").textContent=money(gains);
+    $("take-effect").textContent=money(Math.max(0,gains));
+    const altMonthly=project(C,V+50,R,Y,F,H);
+    const altRate=project(C,V,R+1,Y,F,H);
+    $("scenario-monthly").textContent="+"+money(Math.max(0,altMonthly-capital));
+    $("scenario-rate").textContent="+"+money(Math.max(0,altRate-capital));
     $("crossover").textContent=crossover
       ?"À partir d'environ "+crossover+" ans, les gains cumulés dépassent les sommes versées depuis le départ."
       :"Avec ces paramètres, les gains cumulés ne dépassent pas encore les sommes versées sur la durée choisie.";
     drawChart(rows);
     $("breakdown").innerHTML=rows.slice(1).map(r=>"<tr><td>"+r.year+"</td><td>"+money(r.paid)+"</td><td>"+money(r.gains)+"</td><td>"+money(r.capital)+"</td></tr>").join("");
+  }
+
+  function project(C,V,R,Y,F,H){
+    const months=Math.round(Y*12), rate=Math.max(-99.99,R-F)/100/12;
+    let capital=C;
+    for(let m=1;m<=months;m++){
+      const year=Math.ceil(m/12);
+      capital+=V*Math.pow(1+H/100,year-1);
+      capital*=1+rate;
+    }
+    return capital;
   }
 
   function drawChart(rows){
