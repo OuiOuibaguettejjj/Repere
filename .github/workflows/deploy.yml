@@ -109,6 +109,19 @@ jobs:
             }
           }
 
+          if (allFiles.has('public/sitemap.xml')) {
+            const sitemap = fs.readFileSync('public/sitemap.xml', 'utf8');
+            const sitemapUrls = [...sitemap.matchAll(/<loc>([^<]+)<\\/loc>/g)].map(m => m[1]);
+            const seen = new Set();
+            for (const url of sitemapUrls) {
+              if (seen.has(url)) errors.push('public/sitemap.xml: duplicate URL ' + url);
+              seen.add(url);
+              if (!url.startsWith('https://simulateur.site/')) errors.push('public/sitemap.xml: URL outside canonical domain ' + url);
+              else if (!existsPublicPath(new URL(url).pathname)) errors.push('public/sitemap.xml: broken URL ' + url);
+            }
+            if (sitemapUrls.includes('https://simulateur.site/404.html')) errors.push('public/sitemap.xml: 404 page must not be indexed');
+          }
+
           if (!allFiles.has('public/styles.css')) errors.push('public/styles.css: missing');
           if (!allFiles.has('public/robots.txt')) errors.push('public/robots.txt: missing');
           if (!allFiles.has('public/sitemap.xml')) errors.push('public/sitemap.xml: missing');
