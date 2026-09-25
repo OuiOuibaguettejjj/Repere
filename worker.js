@@ -18,7 +18,7 @@ function enhance(res, path) {
     const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     const plain = (s) => String(s).replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim();
     const url = "https://simulateur.site" + (path === "/" ? "/" : path.endsWith("/") ? path : path + "/");
-    const h1Match = html.match(/<h1\\b[^>]*>([\\s\\S]*?)<\\/h1>/i);
+    const h1Match = html.match(/<h1\b[^>]*>([\\s\\S]*?)<\\/h1>/i);
     const existingTitle = (html.match(/<title>([\\s\\S]*?)<\\/title>/i) || [])[1] || "";
     const existingDesc = (html.match(/<meta\\s+name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || [])[1] || "";
     const title = plain(existingTitle) || plain(h1Match ? h1Match[1] : "") || "Simulateur — calculateurs et outils gratuits";
