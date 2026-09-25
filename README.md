@@ -1,4 +1,4 @@
-# Repere
+# Simulateur
 
 Site statique d'outils de calcul simples, pensé pour être rapide, accessible et indexable.
 
@@ -6,4 +6,4 @@ Site statique d'outils de calcul simples, pensé pour être rapide, accessible e
 
 Le site est autonome : HTML, CSS et JavaScript côté navigateur. Aucun serveur applicatif n'est nécessaire.
 
-URL cible Cloudflare Pages : https://repere.pages.dev/
+URL publique cible : https://simulateur.site/
