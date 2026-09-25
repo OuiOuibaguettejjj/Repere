@@ -19,8 +19,8 @@ function enhance(res, path) {
     const plain = (s) => String(s).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
     const url = "https://simulateur.site" + (path === "/" ? "/" : path.endsWith("/") ? path : path + "/");
     const h1Match = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
-    const existingTitle = (html.match(/<title>([\s\S]*?)<\\/title>/i) || [])[1] || "";
-    const existingDesc = (html.match(/<meta\\s+name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || [])[1] || "";
+    const existingTitle = (html.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "";
+    const existingDesc = (html.match(/<meta\s+name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || [])[1] || "";
     const title = plain(existingTitle) || plain(h1Match ? h1Match[1] : "") || "Simulateur — calculateurs et outils gratuits";
     const description = plain(existingDesc) || plain((html.match(/<p[^>]*class=["'][^"']*(?:tool-intro|lead|muted)[^"']*["'][^>]*>([\s\S]*?)<\\/p>/i) || [])[1] || "") || ("Utilisez gratuitement " + title.replace(/\s*\|\s*Simulateur.*$/i, "") + " sur Simulateur.");
     const canonicalTag = '<link rel="canonical" href="' + esc(url) + '">';
@@ -29,7 +29,7 @@ function enhance(res, path) {
     } else {
       html = html.replace("</head>", canonicalTag + "</head>");
     }
-    if (!/<meta\\s+name=["']description["']/i.test(html)) html = html.replace("</head>", '<meta name="description" content="' + esc(description) + '"></head>');
+    if (!/<meta\s+name=["']description["']/i.test(html)) html = html.replace("</head>", '<meta name="description" content="' + esc(description) + '"></head>');
     if (!/<meta\\s+name=["']robots["']/i.test(html)) html = html.replace("</head>", '<meta name="robots" content="index,follow"></head>');
     const meta = [
       ['og:type','website'],['og:title',title],['og:description',description],['og:url',url],['og:site_name','Simulateur'],['og:locale','fr_FR'],
@@ -40,8 +40,8 @@ function enhance(res, path) {
       const re = new RegExp('<meta\\\\s+(?:name|property)=["\\\']' + name.replace(":", "\\:") + '["\\\'][^>]*>', "i");
       if (!re.test(html)) html = html.replace("</head>", '<meta ' + attr + '="' + name + '" content="' + esc(value) + '"></head>');
     }
-    if (!/<link\\s+[^>]*rel=["']icon["']/i.test(html)) html = html.replace("</head>", '<link rel="icon" href="/favicon.svg" type="image/svg+xml"></head>');
-    if (!/<script\\s+[^>]*type=["']application\\/ld\\+json["']/i.test(html)) {
+    if (!/<link\s+[^>]*rel=["']icon["']/i.test(html)) html = html.replace("</head>", '<link rel="icon" href="/favicon.svg" type="image/svg+xml"></head>');
+    if (!/<script\s+[^>]*type=["']application\\/ld\\+json["']/i.test(html)) {
       const parts = path.split("/").filter(Boolean);
       const crumbs = [{ "@type":"ListItem", position:1, name:"Accueil", item:"https://simulateur.site/" }];
       let acc = "";
@@ -56,9 +56,9 @@ function enhance(res, path) {
       ];
       html = html.replace("</head>", '<script type="application/ld+json">' + JSON.stringify(data) + "</script></head>");
     }
-    if (!/<footer\\b/i.test(html)) {
+    if (!/<footer\b/i.test(html)) {
       html = html.replace("</body>", '<footer><div class="wrap"><div class="footerlinks"><a href="/a-propos/">À propos</a><a href="/contact/">Contact</a><a href="/mentions-legales/">Mentions légales</a><a href="/confidentialite/">Confidentialité</a><a href="/cookies/">Cookies</a><a href="/cgu/">CGU</a></div></div></footer></body>');
-    } else if (!/href=["']\\/contact\\/?["']/i.test(html)) {
+    } else if (!/href=["']\/contact\/?["']/i.test(html)) {
       html = html.replace(/<div[^>]*class=["']footerlinks["'][^>]*>/i, "$&<a href=\"/contact/\">Contact</a>");
     }
     if (path !== "/" && !path.includes("/mentions-legales") && !path.includes("/confidentialite") && !path.includes("/cookies") && !path.includes("/cgu") && !html.includes("related-tools")) {
