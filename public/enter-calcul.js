@@ -164,7 +164,8 @@
       '</div></div>';
 
     tool.dataset.relatedMounted='true';
-    tool.parentNode.insertBefore(section,tool.nextSibling);
+    const wrap=tool.closest('.wrap');
+    if(wrap && wrap.parentNode) wrap.parentNode.insertBefore(section,wrap.nextSibling);
   }
 
   if(document.readyState === 'loading'){
