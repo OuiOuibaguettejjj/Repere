@@ -43,17 +43,18 @@ function enhance(res, path) {
     if (!/<link\s+[^>]*rel=["']icon["']/i.test(html)) html = html.replace("</head>", '<link rel="icon" href="/favicon.svg" type="image/svg+xml"></head>');
     if (!/<script\s+[^>]*type=["']application\/ld\+json["']/i.test(html)) {
       const parts = path.split("/").filter(Boolean);
-      const crumbs = [{ "@type":"ListItem", position:1, name:"Accueil", item:"https://simulateur.site/" }];
-      let acc = "";
-      parts.forEach((part, i) => {
-        acc += "/" + part;
-        if (i === parts.length - 1) return;
-        crumbs.push({ "@type":"ListItem", position:crumbs.length+1, name:part.replace(/-/g," "), item:"https://simulateur.site" + acc + "/" });
-      });
-      const data = [
-        { "@context":"https://schema.org", "@type":"WebPage", name:title, description, url },
-        { "@context":"https://schema.org", "@type":"BreadcrumbList", itemListElement:crumbs }
-      ];
+      const data = [{ "@context":"https://schema.org", "@type":"WebPage", name:title, description, url }];
+      if (path === "/") {
+        data.push({ "@context":"https://schema.org", "@type":"WebSite", name:"Simulateur", url:"https://simulateur.site/" });
+      } else {
+        const crumbs = [{ "@type":"ListItem", position:1, name:"Accueil", item:"https://simulateur.site/" }];
+        let acc = "";
+        parts.forEach((part, i) => {
+          acc += "/" + part;
+          crumbs.push({ "@type":"ListItem", position:crumbs.length+1, name: i === parts.length - 1 ? title.replace(/\s*\|\s*Simulateur.*$/i, "") : part.replace(/-/g," "), ...(i === parts.length - 1 ? {} : { item:"https://simulateur.site" + acc + "/" }) });
+        });
+        data.push({ "@context":"https://schema.org", "@type":"BreadcrumbList", itemListElement:crumbs });
+      }
       html = html.replace("</head>", '<script type="application/ld+json">' + JSON.stringify(data) + "</script></head>");
     }
     if (!/<footer\b/i.test(html)) {
