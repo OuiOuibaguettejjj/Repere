@@ -1,5 +1,5 @@
 (function(){
-  const $=selector=>document.querySelector(selector);
+  const $=selector=>document.querySelector(/^[.#\[]/.test(selector)?selector:'#'+selector);
   const euro=value=>Number(value).toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:2});
   const num=value=>Number(value).toLocaleString("fr-FR",{maximumFractionDigits:2});
 
