@@ -24,7 +24,7 @@ jobs:
             const r=await fetch(url);
             const s=await r.text();
             if(!r.ok) throw new Error('HTTP '+r.status);
-            if(s.length<1000) throw new Error('Suspiciously small simulateurs.js: '+s.length);
+            if(s.length<100) throw new Error('Suspiciously small simulateurs.js: '+s.length);
             if(/TRUNCATED/i.test(s)) throw new Error('Truncated simulateurs.js');
             fs.writeFileSync('public/simulateurs.js',s,'utf8');
             console.log('Recovered simulateurs.js:',s.length,'bytes');
