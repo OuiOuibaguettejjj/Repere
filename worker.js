@@ -25,6 +25,8 @@ function enhance(res, path) {
     }
     const h = new Headers(res.headers);
     h.delete("content-length");
+    h.delete("content-encoding");
+    h.delete("content-range");
     return secure(new Response(html, { status: res.status, headers: h }));
   });
 }
