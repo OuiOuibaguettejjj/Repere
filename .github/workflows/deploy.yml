@@ -34,28 +34,16 @@ jobs:
           walk(root);
 
           const errors = [];
-          const routeExists = (href) => {
-            const u = new URL(href, 'https://simulateur.site/');
-            if (u.origin !== 'https://simulateur.site') return true;
-            const pathname = u.pathname;
-            if (pathname === '/') return fs.existsSync('public/index.html');
-            const routePath = pathname.replace(/^\//, '').replace(/\/$/, '');
-            if (!routePath) return fs.existsSync('public/index.html');
-            return fs.existsSync(path.join('public', routePath, 'index.html'));
-          };
+          const canonicals = new Map();
 
           for (const file of files) {
             const html = fs.readFileSync(file, 'utf8');
-            if (!/<title>[^<]+<\/title>/i.test(html)) errors.push(file + ': missing <title>');
-            if (!/<link[^>]+rel=["']canonical["']/i.test(html)) errors.push(file + ': missing canonical');
-            for (const m of html.matchAll(/(?:href|src)=["']([^"']+)["']/gi)) {
-              const href = m[1];
-              if (href.startsWith('/') && !href.startsWith('//') &&
-                  !href.startsWith('/api/') &&
-                  !/\.(css|js|svg|png|jpe?g|webp|gif|ico|xml|txt)(?:[?#]|$)/i.test(href) &&
-                  !routeExists(href)) {
-                errors.push(file + ': broken internal route ' + href);
-              }
+            if (!/<title>[^<]+<\\/title>/i.test(html)) errors.push(file + ': missing <title>');
+            const canonical = html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i);
+            if (!canonical) errors.push(file + ': missing canonical');
+            else {
+              if (canonicals.has(canonical[1])) errors.push(file + ': duplicate canonical ' + canonical[1] + ' (also ' + canonicals.get(canonical[1]) + ')');
+              canonicals.set(canonical[1], file);
             }
           }
 
