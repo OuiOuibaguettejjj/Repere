@@ -88,3 +88,5 @@ footer{border-top:1px solid var(--ink);padding:30px 0;background:#eee9df}
 .scenario-item small{display:block;color:var(--muted)}
 .scenario-item strong{font-size:.98rem}
 @media(max-width:650px){.takeaway-grid,.scenario-grid{grid-template-columns:1fr}}
+
+.popular-grid .popular-card{min-height:205px;position:relative;border-width:2px}.popular-grid .popular-card:first-child,.popular-grid .popular-card:nth-child(2){border-top:5px solid var(--accent)}.popular-card:after{content:"";position:absolute;top:13px;right:13px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
