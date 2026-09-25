@@ -27,7 +27,7 @@ jobs:
           const path = require('path');
 
           const base = process.env.BASE_URL;
-          const files = cp.execSync("git ls-files 'public/**/*.html' 'public/index.html' 'public/styles.css'", {encoding:"utf8"})
+          const files = cp.execSync("git ls-files 'public/**/*.html' 'public/index.html'", {encoding:"utf8"})
             .trim().split("\n").filter(Boolean)
             .filter(p => p !== "public/contact/index.html");
 
