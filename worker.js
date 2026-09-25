@@ -22,7 +22,7 @@ function enhance(res, path) {
     const existingTitle = (html.match(/<title>([\s\S]*?)<\/title>/i) || [])[1] || "";
     const existingDesc = (html.match(/<meta\s+name=["']description["'][^>]*content=["']([^"']*)["'][^>]*>/i) || [])[1] || "";
     const title = plain(existingTitle) || plain(h1Match ? h1Match[1] : "") || "Simulateur — calculateurs et outils gratuits";
-    const description = plain(existingDesc) || plain((html.match(/<p[^>]*class=["'][^"']*(?:tool-intro|lead|muted)[^"']*["'][^>]*>([\s\S]*?)<\\/p>/i) || [])[1] || "") || ("Utilisez gratuitement " + title.replace(/\s*\|\s*Simulateur.*$/i, "") + " sur Simulateur.");
+    const description = plain(existingDesc) || plain((html.match(/<p[^>]*class=["'][^"']*(?:tool-intro|lead|muted)[^"']*["'][^>]*>([\s\S]*?)<\/p>/i) || [])[1] || "") || ("Utilisez gratuitement " + title.replace(/\s*\|\s*Simulateur.*$/i, "") + " sur Simulateur.");
     const canonicalTag = '<link rel="canonical" href="' + esc(url) + '">';
     if (/<link\\s+[^>]*rel=["']canonical["']/i.test(html)) {
       html = html.replace(/<link\\s+[^>]*rel=["']canonical["'][^>]*>/i, canonicalTag);
@@ -41,7 +41,7 @@ function enhance(res, path) {
       if (!re.test(html)) html = html.replace("</head>", '<meta ' + attr + '="' + name + '" content="' + esc(value) + '"></head>');
     }
     if (!/<link\s+[^>]*rel=["']icon["']/i.test(html)) html = html.replace("</head>", '<link rel="icon" href="/favicon.svg" type="image/svg+xml"></head>');
-    if (!/<script\s+[^>]*type=["']application\\/ld\\+json["']/i.test(html)) {
+    if (!/<script\s+[^>]*type=["']application\/ld\\+json["']/i.test(html)) {
       const parts = path.split("/").filter(Boolean);
       const crumbs = [{ "@type":"ListItem", position:1, name:"Accueil", item:"https://simulateur.site/" }];
       let acc = "";
