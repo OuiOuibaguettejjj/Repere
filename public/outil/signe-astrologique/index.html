@@ -85,21 +85,16 @@ const dateEl=document.querySelector("#birth-date"),timeEl=document.querySelector
 
 function norm(x){x%=360;if(x<0)x+=360;return x}
 function signAt(lon){const i=Math.floor(norm(lon)/30);return {index:i,name:SIGNS[i][0],symbol:SIGNS[i][1],degree:norm(lon)%30}}
-function solarSign(month,day){const md=month*100+day;const starts=[321,420,521,621,723,823,923,1023,1122,1222,120,219];const ends=[419,520,620,722,822,922,1022,1121,1221,119,218,320];for(let i=0;i<12;i++){if(i===9||i===10||i===11){if((i===9&&md>=1222)||(i===10&&md<=119)||(i===10&&md>=120)||(i===11&&md<=320)||(i===11&&md>=219)) return i;}else if(md>=starts[i]&&md<=ends[i]) return i;}return 0}
+function solarSign(month,day){const md=month*100+day;const starts=[321,420,521,621,723,823,923,1023,1122,1222,120,219];for(let i=0;i<12;i++){const next=starts[(i+1)%12];if(i===9){if(md>=1222||md<120)return i;}else if(i===10){if(md>=120&&md<219)return i;}else if(i===11){if(md>=219&&md<321)return i;}else if(md>=starts[i]&&md<next)return i;}return 0}
 function jdFromDate(date){return date.getTime()/86400000+2440587.5}
 function gmst(jd){const d=jd-2451545.0;const T=d/36525;return norm(280.46061837+360.98564736629*d+0.000387933*T*T-T*T*T/38710000)}
 function obliquity(T){return 23.43929111-0.013004167*T-1.64e-7*T*T+5.04e-7*T*T*T}
+function zoneOffsetHours(date,tz){const parts=new Intl.DateTimeFormat("en-US",{timeZone:tz,timeZoneName:"shortOffset",hour:"2-digit",hourCycle:"h23"}).formatToParts(date);const zone=parts.find(p=>p.type==="timeZoneName")?.value||"GMT";const mat=zone.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);return mat?(mat[1]==="-"?-1:1)*(Number(mat[2])+(Number(mat[3]||0)/60)):0}
 function utcDateFromLocal(dateStr,timeStr,tz,offsetHours){
  const [y,m,d]=dateStr.split("-").map(Number),[hh,mm]=(timeStr||"12:00").split(":").map(Number);
- if(tz){
-   const approx=new Date(Date.UTC(y,m-1,d,hh,mm));
-   const parts=new Intl.DateTimeFormat("en-US",{timeZone:tz,timeZoneName:"shortOffset",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(approx);
-   const zone=parts.find(p=>p.type==="timeZoneName")?.value||"GMT";
-   const mat=zone.match(/GMT([+-])(\d{1,2})(?::(\d{2}))?/);
-   const off=mat?(mat[1]==="-"?-1:1)*(Number(mat[2])+(Number(mat[3]||0)/60)):0;
-   return new Date(Date.UTC(y,m-1,d,hh,mm)-off*3600000);
- }
- return new Date(Date.UTC(y,m-1,d,hh,mm)-Number(offsetHours||0)*3600000);
+ let utc=Date.UTC(y,m-1,d,hh,mm);
+ if(tz){for(let i=0;i<2;i++) utc=Date.UTC(y,m-1,d,hh,mm)-zoneOffsetHours(new Date(utc),tz)*3600000;return new Date(utc);}
+ return new Date(utc-Number(offsetHours)*3600000);
 }
 function ascendant(date,lat,lon){
  const jd=jdFromDate(date),T=(jd-2451545)/36525;
@@ -123,6 +118,7 @@ function show(){
  if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>=90||Math.abs(lon)>180){
    html+='<article class="astro-result"><div class="eyebrow">ASCENDANT</div><div class="sign">Lieu à préciser</div><div class="degree">Choisissez une ville reconnue ou renseignez latitude et longitude.</div><div class="desc">Pour éviter une estimation arbitraire, le calcul ne devine jamais votre lieu de naissance.</div></article></div>';result.innerHTML=html;return;
  }
+ if(!city&&!offsetEl.value){html+='<article class="astro-result"><div class="eyebrow">ASCENDANT</div><div class="sign">Fuseau horaire à préciser</div><div class="degree">Choisissez une ville reconnue ou indiquez le décalage UTC.</div><div class="desc">L’heure locale doit être convertie correctement en UTC avant de calculer le temps sidéral.</div></article></div>';result.innerHTML=html;return;}
  const date=utcDateFromLocal(dateEl.value,timeEl.value,city?city[3]:null,offsetEl.value);
  const a=ascendant(date,lat,lon), rising=signAt(a);
  html+='<article class="astro-result"><div class="eyebrow">ASCENDANT</div><div class="sign">'+rising.symbol+" "+rising.name+'</div><div class="degree">'+fmtDegree(rising.degree)+' · longitude écliptique '+fmtDegree(a)+'</div><div class="desc">Calculé à partir de votre heure locale de naissance, de la latitude et de la longitude du lieu, du temps sidéral local et de l’obliquité de l’écliptique.</div></article></div>';
