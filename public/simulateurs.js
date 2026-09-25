@@ -11,9 +11,9 @@
     "temps-partiel":["Salaire","/salaire/",[["salaire-brut-net","Salaire brut ↔ net","Estimer le net avant impôt."],["salaire-horaire","Salaire horaire","Calculer le taux horaire."]]],
     "prelevement-source":["Fiscalité","/fiscalite/",[["impot-sur-le-revenu","Impôt sur le revenu","Estimer l'impôt annuel."],["salaire-brut-net","Salaire brut ↔ net","Estimer le net avant impôt."]]],
     "ifi":["Immobilier","/immobilier/",[["plus-value-immobiliere","Plus-value immobilière","Calculer une plus-value immobilière."],["frais-de-notaire","Frais de notaire","Estimer les frais d'acquisition."]]],
-    "epargne-reglementee":["Épargne","/",[["interets-composes","Intérêts composés","Projeter un capital."],["epargne-mensuelle","Épargne mensuelle","Calculer un effort d'épargne."]]],
-    "assurance-vie":["Épargne","/",[["interets-composes","Intérêts composés","Projeter un capital."],["epargne-mensuelle","Épargne mensuelle","Calculer un effort d'épargne."]]],
-    "per":["Épargne","/",[["interets-composes","Intérêts composés","Projeter un capital."],["retraite-simplifiee","Retraite simplifiée","Estimer une pension de base."]]],
+    "epargne-reglementee":["Épargne","/epargne/",[["interets-composes","Intérêts composés","Projeter un capital."],["epargne-mensuelle","Épargne mensuelle","Calculer un effort d'épargne."]]],
+    "assurance-vie":["Épargne","/epargne/",[["interets-composes","Intérêts composés","Projeter un capital."],["epargne-mensuelle","Épargne mensuelle","Calculer un effort d'épargne."]]],
+    "per":["Épargne","/epargne/",[["interets-composes","Intérêts composés","Projeter un capital."],["retraite-simplifiee","Retraite simplifiée","Estimer une pension de base."]]],
     "salaire-brut-net":["Salaire","/salaire/",[
       ["salaire-horaire","Salaire horaire","Convertir un salaire en taux horaire."],
       ["rupture-conventionnelle","Rupture conventionnelle","Estimer l’indemnité minimale."],
