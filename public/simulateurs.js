@@ -4,6 +4,9 @@
   const num=value=>Number(value).toLocaleString("fr-FR",{maximumFractionDigits:2});
 
   const groups={
+    "smic":["Salaire","/salaire/",[["salaire-brut-net","Salaire brut ↔ net","Estimer le net avant impôt."],["salaire-horaire","Salaire horaire","Calculer le taux horaire."]]],
+    "taux-endettement":["Immobilier","/immobilier/",[["capacite-emprunt","Capacité d’emprunt","Estimer le capital empruntable."],["pret-immobilier","Prêt immobilier","Calculer mensualité et coût du crédit."]]],
+    "indemnite-precarite":["Travail","/travail/",[["preavis-demission","Préavis de démission","Estimer la durée du préavis."],["rupture-conventionnelle","Rupture conventionnelle","Estimer l’indemnité minimale."]]],
     "salaire-brut-net":["Salaire","/salaire/",[
       ["salaire-horaire","Salaire horaire","Convertir un salaire en taux horaire."],
       ["rupture-conventionnelle","Rupture conventionnelle","Estimer l’indemnité minimale."],
