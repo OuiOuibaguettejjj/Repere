@@ -11,11 +11,63 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-      - name: Deploy
-        run: npx wrangler@latest deploy --config wrangler.jsonc
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        uses: actions/checkout@v6
+
+      - name: Validate static site
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const root = 'public';
+          const files = [];
+          function walk(dir) {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const p = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(p);
+              else if (entry.isFile() && p.endsWith('.html')) files.push(p);
+            }
+          }
+          walk(root);
+
+          const errors = [];
+          const routeExists = (href) => {
+            const u = new URL(href, 'https://simulateur.site/');
+            if (u.origin !== 'https://simulateur.site') return true;
+            const pathname = u.pathname;
+            if (pathname === '/') return fs.existsSync('public/index.html');
+            if (!pathname.endsWith('/')) return false;
+            return fs.existsSync(path.join('public', pathname.replace(/^\//, ''), 'index.html'));
+          };
+
+          for (const file of files) {
+            const html = fs.readFileSync(file, 'utf8');
+            if (!/<title>[^<]+<\/title>/i.test(html)) errors.push(file + ': missing <title>');
+            if (!/<link[^>]+rel=["']canonical["']/i.test(html)) errors.push(file + ': missing canonical');
+            for (const m of html.matchAll(/(?:href|src)=["']([^"']+)["']/gi)) {
+              const href = m[1];
+              if (href.startsWith('/') && !href.startsWith('//') &&
+                  !href.startsWith('/api/') &&
+                  !/\.(css|js|svg|png|jpe?g|webp|gif|ico|xml|txt)(?:[?#]|$)/i.test(href) &&
+                  !routeExists(href)) {
+                errors.push(file + ': broken internal route ' + href);
+              }
+            }
+          }
+
+          if (errors.length) {
+            console.error(errors.join('\n'));
+            process.exit(1);
+          }
+          console.log(`Validated ${files.length} HTML pages successfully.`);
+          NODE
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy --config wrangler.jsonc
