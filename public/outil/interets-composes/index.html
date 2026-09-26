@@ -140,45 +140,75 @@
 (function(){
   const $=id=>document.getElementById(id);
   const money=v=>Number(v).toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0});
-  const pct=v=>Number(v).toLocaleString("fr-FR",{maximumFractionDigits:1})+" %";
   const inputs=["capital","versement","rendement","duree","frais","hausse","inflation"].map($);
   const frequency=$("frequence");
 
   function value(el){return Number(el.value);}
+
+  function simulate(C,V,R,F,Y,H,freq){
+    const netAnnual=Math.max(-99.99,R-F)/100;
+    const grossAnnual=R/100;
+    const months=Math.round(Y*12);
+    const rows=[{year:0,paid:C,gains:0,capital:C}];
+    let principal=C, interest=0, grossPrincipal=C, grossInterest=0, paid=C;
+    const addPayment=m=>{
+      const year=Math.ceil(m/12), payment=V*Math.pow(1+H/100,year-1);
+      principal+=payment; grossPrincipal+=payment; paid+=payment;
+    };
+    if(freq==="daily"||freq==="never"){
+      const totalDays=Math.round(Y*365);
+      let nextMonth=1;
+      for(let day=1;day<=totalDays;day++){
+        const target=Math.round(nextMonth*365/12);
+        if(nextMonth<=months && day===target){ addPayment(nextMonth); nextMonth++; }
+        if(freq==="daily"){
+          const daily=Math.pow(1+netAnnual,1/365)-1;
+          const grossDaily=Math.pow(1+grossAnnual,1/365)-1;
+          principal*=1+daily; grossPrincipal*=1+grossDaily;
+        }else{
+          interest+=principal*netAnnual/365;
+          grossInterest+=grossPrincipal*grossAnnual/365;
+        }
+        if(day%365===0){
+          const year=day/365, capital=principal+interest, grossCapital=grossPrincipal+grossInterest;
+          rows.push({year,paid,gains:capital-paid,capital,grossCapital});
+        }
+      }
+      if(freq==="daily"){
+        rows[rows.length-1].grossCapital=grossPrincipal;
+      }
+    }else{
+      const periodic=Math.pow(1+netAnnual,1/(freq==="monthly"?12:1))-1;
+      const grossPeriodic=Math.pow(1+grossAnnual,1/(freq==="monthly"?12:1))-1;
+      for(let m=1;m<=months;m++){
+        addPayment(m);
+        if(freq==="monthly" || (freq==="annual" && m%12===0)){
+          principal*=1+periodic; grossPrincipal*=1+grossPeriodic;
+        }
+        if(m%12===0){
+          const year=m/12;
+          rows.push({year,paid,gains:principal-paid,capital:principal,grossCapital:grossPrincipal});
+        }
+      }
+    }
+    const final=rows[rows.length-1];
+    return {rows,capital:final.capital,paid,gains:final.capital-paid,grossCapital:final.grossCapital};
+  }
+
   function calculate(){
-    const C=value($("capital")), V=value($("versement")), R=value($("rendement")), Y=value($("duree"));
-    const F=value($("frais")), H=value($("hausse")), I=value($("inflation"));
+    const C=value($("capital")),V=value($("versement")),R=value($("rendement")),Y=value($("duree"));
+    const F=value($("frais")),H=value($("hausse")),I=value($("inflation")),freq=frequency.value;
     if(![C,V,R,Y,F,H,I].every(Number.isFinite)||C<0||V<0||R<0||Y<1||Y>100||F<0||H<0||I<0||F>20||H>20||I>20){
       $("final").textContent="Valeurs invalides"; return;
     }
-    const months=Math.round(Y*12), netAnnual=Math.max(-99.99,R-F), freq=frequency.value;
-    const periodsPerYear=freq==="daily"?365:freq==="monthly"?12:freq==="annual"?1:0;
-    const periodicRate=periodsPerYear?Math.pow(1+netAnnual/100,1/periodsPerYear)-1:0;
-    const grossPeriodicRate=periodsPerYear?Math.pow(1+R/100,1/periodsPerYear)-1:0;
-    let capital=C, paid=C, grossCapital=C, rows=[{year:0,paid:C,gains:0,capital:C}], crossover=null;
-    if(freq==="never"){
-      for(let m=1;m<=months;m++){
-        const year=Math.ceil(m/12), monthlyPayment=V*Math.pow(1+H/100,year-1);
-        const elapsed=(months-m+1)/12;
-        paid+=monthlyPayment;
-        capital+=monthlyPayment + monthlyPayment*(netAnnual/100)*elapsed;
-        grossCapital+=monthlyPayment + monthlyPayment*(R/100)*elapsed;
-        if(m%12===0){ const gains=capital-paid; rows.push({year:m/12,paid,gains,capital}); if(!crossover&&gains>paid-C)crossover=m/12; }
-      }
-      capital+=C*(netAnnual/100)*Y; grossCapital+=C*(R/100)*Y;
-      rows=rows.map((r,i)=>i===rows.length-1?{...r,capital, gains:capital-r.paid}:r);
-    } else {
-      for(let m=1;m<=months;m++){
-        const year=Math.ceil(m/12), monthlyPayment=V*Math.pow(1+H/100,year-1);
-        capital+=monthlyPayment; paid+=monthlyPayment; grossCapital+=monthlyPayment;
-        if(freq==="monthly"){ capital*=1+periodicRate; grossCapital*=1+grossPeriodicRate; }
-        else if(freq==="annual" && m%12===0){ capital*=1+periodicRate; grossCapital*=1+grossPeriodicRate; }
-        else if(freq==="daily"){ const dailyRate=periodicRate; capital*=Math.pow(1+dailyRate,365/12); grossCapital*=Math.pow(1+grossPeriodicRate,365/12); }
-        if(m%12===0){ const gains=capital-paid; rows.push({year:m/12,paid,gains,capital}); if(!crossover&&gains>paid-C)crossover=m/12; }
-      }
-    }
-    const gains=capital-paid, real=capital/Math.pow(1+I/100,Y);
-    const feeImpact=Math.max(0,grossCapital-capital);
+    const result=simulate(C,V,R,F,Y,H,freq);
+    const gross=simulate(C,V,R,0,Y,H,freq);
+    const capital=result.capital,paid=result.paid,gains=result.gains;
+    const real=capital/Math.pow(1+I/100,Y);
+    const feeImpact=Math.max(0,gross.capital-capital);
+    const altMonthly=simulate(C,V+50,R,F,Y,H,freq).capital;
+    const altRate=simulate(C,V,R+1,F,Y,H,freq).capital;
+    const crossover=result.rows.find(r=>r.gains>r.paid-C);
     $("years-label").textContent=Y;
     $("final").textContent=money(capital);
     $("gains").textContent=money(gains);
@@ -189,32 +219,13 @@
     $("take-final").textContent=money(capital);
     $("take-gains").textContent=money(gains);
     $("take-effect").textContent=money(Math.max(0,gains));
-    const altMonthly=project(C,V+50,R,Y,F,H,freq);
-    const altRate=project(C,V,R+1,Y,F,H,freq);
     $("scenario-monthly").textContent="+"+money(Math.max(0,altMonthly-capital));
     $("scenario-rate").textContent="+"+money(Math.max(0,altRate-capital));
     $("crossover").textContent=crossover
-      ?"À partir d'environ "+crossover+" ans, les gains cumulés dépassent les sommes versées depuis le départ."
+      ?"À partir d'environ "+crossover.year+" ans, les intérêts cumulés dépassent les sommes versées depuis le départ."
       :"Avec ces paramètres, les intérêts cumulés ne dépassent pas encore les sommes versées sur la durée choisie.";
-    drawChart(rows);
-    $("breakdown").innerHTML=rows.slice(1).map(r=>"<tr><td>"+r.year+"</td><td>"+money(r.paid)+"</td><td>"+money(r.gains)+"</td><td>"+money(r.capital)+"</td></tr>").join("");
-  }
-
-  function project(C,V,R,Y,F,H,freq){
-    const months=Math.round(Y*12), net=Math.max(-99.99,R-F), ppy=freq==="daily"?365:freq==="monthly"?12:freq==="annual"?1:0;
-    let capital=C;
-    if(freq==="never"){
-      for(let m=1;m<=months;m++){const year=Math.ceil(m/12),payment=V*Math.pow(1+H/100,year-1);capital+=payment+payment*(net/100)*((months-m+1)/12);}
-      return capital+C*(net/100)*Y;
-    }
-    const rate=Math.pow(1+net/100,1/ppy)-1;
-    for(let m=1;m<=months;m++){
-      const year=Math.ceil(m/12); capital+=V*Math.pow(1+H/100,year-1);
-      if(freq==="monthly") capital*=1+rate;
-      else if(freq==="annual"&&m%12===0) capital*=1+rate;
-      else if(freq==="daily") capital*=Math.pow(1+rate,365/12);
-    }
-    return capital;
+    drawChart(result.rows);
+    $("breakdown").innerHTML=result.rows.slice(1).map(r=>"<tr><td>"+r.year+"</td><td>"+money(r.paid)+"</td><td>"+money(r.gains)+"</td><td>"+money(r.capital)+"</td></tr>").join("");
   }
 
   function drawChart(rows){
@@ -224,34 +235,29 @@
     const path=key=>rows.map((r,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(r[key]).toFixed(1)).join(" ");
     const area=path("capital")+" L "+x(rows.length-1).toFixed(1)+" "+y(0).toFixed(1)+" L "+x(0).toFixed(1)+" "+y(0).toFixed(1)+" Z";
     const ticks=4,grid=[];
-    for(let i=0;i<=ticks;i++){
-      const val=max*i/ticks,yy=y(val);
-      grid.push('<line class="grid-line" x1="'+pad.l+'" y1="'+yy+'" x2="'+(W-pad.r)+'" y2="'+yy+'"/><text x="'+(pad.l-10)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11">'+fmt(val)+'</text>');
-    }
+    for(let i=0;i<=ticks;i++){const val=max*i/ticks,yy=y(val);grid.push('<line class="grid-line" x1="'+pad.l+'" y1="'+yy+'" x2="'+(W-pad.r)+'" y2="'+yy+'"/><text x="'+(pad.l-10)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11">'+fmt(val)+'</text>');}
     const labels=[0,Math.floor((rows.length-1)/2),rows.length-1].filter((v,i,a)=>a.indexOf(v)===i);
     svg.innerHTML='<defs><linearGradient id="capitalGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff5a36" stop-opacity=".22"/><stop offset="100%" stop-color="#ff5a36" stop-opacity="0"/></linearGradient></defs>'+grid.join("")+
       '<line class="axis-line" x1="'+pad.l+'" y1="'+y(0)+'" x2="'+(W-pad.r)+'" y2="'+y(0)+'"/><path class="capital-area" d="'+area+'"/><path class="paid-line" d="'+path("paid")+'"/><path class="capital-line" d="'+path("capital")+'"/>'+
       labels.map(i=>'<text x="'+x(i)+'" y="'+(H-15)+'" text-anchor="middle" font-size="11">'+rows[i].year+" an"+(rows[i].year>1?"s":"")+"</text>").join("")+
       '<g id="chart-points"></g>';
-    const points=$("chart").querySelector("#chart-points");
+    const points=svg.querySelector("#chart-points");
     rows.forEach((r,i)=>{
       const cx=x(i),cy=y(r.capital),circle=document.createElementNS("http://www.w3.org/2000/svg","circle");
-      circle.setAttribute("class","dot");circle.setAttribute("cx",cx);circle.setAttribute("cy",cy);circle.setAttribute("r","5");
-      circle.style.opacity="0";circle.style.cursor="pointer";
+      circle.setAttribute("class","dot");circle.setAttribute("cx",cx);circle.setAttribute("cy",cy);circle.setAttribute("r","5");circle.style.opacity="0";circle.style.cursor="pointer";
       circle.addEventListener("mouseenter",()=>{
         circle.style.opacity="1";
         tooltip.innerHTML="<strong>"+r.year+" an"+(r.year>1?"s":"")+"</strong><span>Capital : "+fmt(r.capital)+"</span><span>Versé : "+fmt(r.paid)+"</span><span>Intérêts : "+fmt(r.gains)+"</span>";
         const shell=svg.parentElement.getBoundingClientRect(),rect=svg.getBoundingClientRect();
-        tooltip.style.left=((cx/W)*rect.width+(rect.left-shell.left))+"px";
-        tooltip.style.top=((cy/H)*rect.height)+"px";
-        tooltip.style.opacity="1";tooltip.setAttribute("aria-hidden","false");
+        tooltip.style.left=((cx/W)*rect.width+(rect.left-shell.left))+"px";tooltip.style.top=((cy/H)*rect.height)+"px";tooltip.style.opacity="1";tooltip.setAttribute("aria-hidden","false");
       });
       circle.addEventListener("mouseleave",()=>{circle.style.opacity="0";tooltip.style.opacity="0";tooltip.setAttribute("aria-hidden","true")});
       points.appendChild(circle);
     });
   }
 
-  inputs.forEach(el=>el.addEventListener("input",()=>{ if(el.id==="duree") $("years-label").textContent=el.value||"—"; }));
+  inputs.forEach(el=>el.addEventListener("input",()=>{if(el.id==="duree")$("years-label").textContent=el.value||"—";}));
+  frequency.addEventListener("change",calculate);
   $("calculate").addEventListener("click",calculate);
   calculate();
 })();
