@@ -5,6 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: production
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -15,6 +19,47 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+
+      - name: Verify commit and consistency before production
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          node <<'NODE'
+          const fs = require('fs');
+          const cp = require('child_process');
+          const errors = [];
+          const minimumSitemapUrls = 106;
+          const critical = [
+            ['public/outil/interets-composes/index.html', 8000, ['<svg', '<table', 'Et si']],
+            ['public/outil/signe-astrologique/index.html', 8000, ['ascendant', 'Calculs associés']],
+            ['public/outil/preavis-demission/index.html', 5000, ['Préavis', 'source']]
+          ];
+          const sitemap = fs.readFileSync('public/sitemap.xml', 'utf8');
+          const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(m => m[1]);
+          if (urls.length < minimumSitemapUrls) errors.push(`sitemap regression: ${urls.length} URLs < ${minimumSitemapUrls}`);
+          let parentSitemap = '';
+          try { parentSitemap = cp.execFileSync('git', ['show', 'HEAD^:public/sitemap.xml'], {encoding:'utf8'}); } catch {}
+          if (parentSitemap) {
+            const parentCount = (parentSitemap.match(/<loc>/g) || []).length;
+            if (urls.length < parentCount) errors.push(`sitemap lost URLs: ${parentCount} -> ${urls.length}`);
+          }
+          for (const [file, minBytes, markers] of critical) {
+            if (!fs.existsSync(file)) { errors.push(`missing critical file: ${file}`); continue; }
+            const html = fs.readFileSync(file, 'utf8');
+            if (html.length < minBytes) errors.push(`critical page too small: ${file} (${html.length} bytes)`);
+            for (const marker of markers) if (!html.toLowerCase().includes(marker.toLowerCase())) errors.push(`critical marker missing in ${file}: ${marker}`);
+          }
+          const changed = cp.execFileSync('git', ['diff', '--name-only', 'HEAD^', 'HEAD', '--', 'public'], {encoding:'utf8'}).trim().split(/\r?\n/).filter(Boolean);
+          for (const file of changed.filter(f => f.startsWith('public/outil/') && f.endsWith('.html'))) {
+            let parent = '';
+            try { parent = cp.execFileSync('git', ['show', `HEAD^:${file}`], {encoding:'utf8'}); } catch {}
+            const current = fs.readFileSync(file, 'utf8');
+            if (parent.length >= 2000 && current.length < parent.length * 0.65) errors.push(`destructive HTML shrink detected: ${file} (${parent.length} -> ${current.length} bytes)`);
+          }
+          if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
+          console.log(`Consistency guard passed: ${urls.length} sitemap URLs; ${changed.length} public files changed.`);
+          NODE
 
       - name: Validate complete static site
         run: |
@@ -216,12 +261,24 @@ jobs:
           })();
           NODE
 
+      - name: Refuse stale production deployment
+        run: |
+          git fetch origin main --quiet
+          test "$(git rev-parse origin/main)" = "$GITHUB_SHA"
+
+      - name: Create deployment fingerprint
+        run: printf '%s\n' "$GITHUB_SHA" > public/__build-sha.txt
+
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy --config wrangler.jsonc
+
+      - name: Verify production fingerprint
+        run: |
+          test "$(curl -fsSL https://simulateur.site/__build-sha.txt)" = "$GITHUB_SHA"
 
       - name: Smoke-test production after deploy
         run: |
