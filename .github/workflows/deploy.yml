@@ -278,7 +278,22 @@ jobs:
 
       - name: Verify production fingerprint
         run: |
-          test "$(curl -fsSL https://simulateur.site/__build-sha.txt)" = "$GITHUB_SHA"
+          set -euo pipefail
+          expected="$GITHUB_SHA"
+          actual=""
+          for attempt in $(seq 1 30); do
+            actual="$(curl -fsSL --retry 2 --retry-delay 1 https://simulateur.site/__build-sha.txt 2>/dev/null || true)"
+            if [ "$actual" = "$expected" ]; then
+              echo "Production fingerprint verified on attempt $attempt."
+              exit 0
+            fi
+            echo "Production fingerprint not propagated yet (attempt $attempt/30)."
+            sleep 2
+          done
+          echo "Production fingerprint mismatch after 60 seconds."
+          echo "Expected: $expected"
+          echo "Received: $actual"
+          exit 1
 
       - name: Smoke-test production after deploy
         run: |
