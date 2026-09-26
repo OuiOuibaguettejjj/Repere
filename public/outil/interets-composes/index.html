@@ -93,7 +93,7 @@
 <div class="takeaway-grid">
 <div class="takeaway-item"><small>Capital final</small><strong id="take-final">—</strong></div>
 <div class="takeaway-item"><small>Intérêts</small><strong id="take-gains">—</strong></div>
-<div class="takeaway-item"><small>Gain lié à la capitalisation</small><strong id="take-effect">—</strong><span class="takeaway-help">Différence entre le capital final avec intérêts composés et celui obtenu avec des intérêts simples, à paramètres identiques.</span></div>
+
 </div>
 </div>
 <div class="scenario">
@@ -249,7 +249,7 @@
     const real=capital/Math.pow(1+I/100,Y);
     const feeImpact=Math.max(0,gross.capital-capital);
     const simpleCapital=simulate(C,V,R,F,Y,H,"never").capital;
-    const capitalizationEffect=Math.max(0,capital-simpleCapital);
+
     const altMonthly=simulate(C,V+50,R,F,Y,H,freq).capital;
     const altRate=simulate(C,V,R+1,F,Y,H,freq).capital;
     const crossover=result.rows.find(r=>r.gains>r.paid-C);
@@ -262,7 +262,7 @@
     $("multiple").textContent=(paid>0?capital/paid:0).toLocaleString("fr-FR",{maximumFractionDigits:2})+"×";
     $("take-final").textContent=money(capital);
     $("take-gains").textContent=money(gains);
-    $("take-effect").textContent=money(capitalizationEffect);
+
     $("scenario-monthly").textContent="+"+money(Math.max(0,altMonthly-capital));
     $("scenario-rate").textContent="+"+money(Math.max(0,altRate-capital));
     $("crossover").textContent=crossover
