@@ -135,9 +135,11 @@
       if(event.key !== 'Enter' || event.isComposing) return;
       const target=event.target;
       if(!target || target.tagName !== 'INPUT' || target.type === 'hidden') return;
-      const tool=target.closest('.tool');
-      if(!tool) return;
-      const button=tool.querySelector('button.button-main');
+      const container=target.closest('.tool, .pv');
+      const form=target.closest('form');
+      if(!container && !form) return;
+      const button=(container && container.querySelector('button.button-main')) || (form && form.querySelector('button[type="submit"], button.button-main'));
+      if(!button) return;
       if(!button || button.disabled) return;
       event.preventDefault();
       button.click();
@@ -145,7 +147,7 @@
   }
 
   function renderRelatedTools(){
-    const tool=document.querySelector('.tool');
+    const tool=document.querySelector('.tool, .pv');
     if(!tool || tool.dataset.relatedMounted) return;
 
     const canonical=document.querySelector('link[rel="canonical"]');
