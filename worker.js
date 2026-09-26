@@ -85,6 +85,30 @@ export default {
       }
     }
 
-    return env.ASSETS.fetch(request);
+    const assetResponse = await env.ASSETS.fetch(request);
+    const pathname = url.pathname;
+    const needsEnhancements = /^(?:\/outil|\/conversion)\//.test(pathname) && assetResponse.headers.get("content-type")?.includes("text/html");
+    if (!needsEnhancements) return secure(assetResponse);
+
+    let hasEnhancements = false;
+    const transformed = new HTMLRewriter()
+      .on("script", {
+        element(element) {
+          const src = element.getAttribute("src");
+          if (src === "/enter-calcul.js" || src === "https://simulateur.site/enter-calcul.js") hasEnhancements = true;
+        }
+      })
+      .on("head", {
+        element(element) {
+          element.onEndTag(() => {
+            if (!hasEnhancements) {
+              element.before('<script src="/enter-calcul.js" defer></script>', { html: true });
+            }
+          });
+        }
+      })
+      .transform(assetResponse);
+
+    return secure(transformed);
   }
 };
