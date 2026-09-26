@@ -73,7 +73,7 @@
 <div class="field"><label for="hausse">Hausse annuelle du versement (%)</label><input id="hausse" type="number" min="0" max="20" step="0.1" value="0"></div>
 </div>
 <div class="field"><label for="inflation">Inflation annuelle (%)</label><input id="inflation" type="number" min="0" max="20" step="0.1" value="2"></div>
-<p class="note">Les frais réduisent le rendement utilisé dans la projection. L’inflation sert uniquement à estimer le pouvoir d’achat du capital final. La fréquence de composition détermine à quelle fréquence les intérêts sont ajoutés au capital.</p>
+<p class="note">Les frais réduisent le rendement utilisé dans la projection. L’inflation sert uniquement à estimer le pouvoir d’achat du capital final. La fréquence de composition détermine à quelle fréquence les intérêts sont ajoutés au capital. À taux annuel identique, une composition plus fréquente produit généralement davantage d’intérêts lorsque les intérêts restent investis.</p>
 </details>
 <button class="button-main" id="calculate" type="button">Calculer</button>
 </section>
@@ -93,7 +93,7 @@
 <div class="takeaway-grid">
 <div class="takeaway-item"><small>Capital final</small><strong id="take-final">—</strong></div>
 <div class="takeaway-item"><small>Intérêts</small><strong id="take-gains">—</strong></div>
-<div class="takeaway-item"><small>Effet de la capitalisation</small><strong id="take-effect">—</strong></div>
+<div class="takeaway-item"><small>Effet de la capitalisation</small><strong id="take-effect">—</strong><span class="takeaway-help">Supplément de capital obtenu grâce aux intérêts qui produisent eux-mêmes des intérêts.</span></div>
 </div>
 </div>
 <div class="scenario">
@@ -150,47 +150,68 @@
     const grossAnnual=R/100;
     const months=Math.round(Y*12);
     const rows=[{year:0,paid:C,gains:0,capital:C}];
-    let principal=C, interest=0, grossPrincipal=C, grossInterest=0, paid=C;
+    let capital=C, grossCapital=C, paid=C;
+
     const addPayment=m=>{
-      const year=Math.ceil(m/12), payment=V*Math.pow(1+H/100,year-1);
-      principal+=payment; grossPrincipal+=payment; paid+=payment;
+      const year=Math.ceil(m/12);
+      const payment=V*Math.pow(1+H/100,year-1);
+      capital+=payment;
+      grossCapital+=payment;
+      paid+=payment;
     };
-    if(freq==="daily"||freq==="never"){
-      const totalDays=Math.round(Y*365);
-      let nextMonth=1;
-      for(let day=1;day<=totalDays;day++){
-        const target=Math.round(nextMonth*365/12);
-        if(freq==="daily"){
-          const daily=Math.pow(1+netAnnual,1/365)-1;
-          const grossDaily=Math.pow(1+grossAnnual,1/365)-1;
-          principal*=1+daily; grossPrincipal*=1+grossDaily;
-        }else{
-          interest+=principal*netAnnual/365;
-          grossInterest+=grossPrincipal*grossAnnual/365;
+
+    if(freq==="never"){
+      for(let m=1;m<=months;m++){
+        const year=Math.ceil(m/12);
+        const payment=V*Math.pow(1+H/100,year-1);
+        const remainingMonths=months-m+1;
+        capital+=payment;
+        grossCapital+=payment;
+        paid+=payment;
+        capital+=payment*netAnnual/12*remainingMonths;
+        grossCapital+=payment*grossAnnual/12*remainingMonths;
+        if(m%12===0){
+          rows.push({year:m/12,paid,gains:capital-paid,capital,grossCapital});
         }
+      }
+      capital+=C*netAnnual*Y;
+      grossCapital+=C*grossAnnual*Y;
+      const final=rows[rows.length-1];
+      final.capital=capital;
+      final.grossCapital=grossCapital;
+      final.gains=capital-final.paid;
+    } else if(freq==="daily"){
+      const dailyRate=netAnnual/365;
+      const grossDailyRate=grossAnnual/365;
+      let nextMonth=1;
+      for(let day=1;day<=Math.round(Y*365);day++){
+        capital*=1+dailyRate;
+        grossCapital*=1+grossDailyRate;
+        const target=Math.round(nextMonth*365/12);
         if(nextMonth<=months && day===target){ addPayment(nextMonth); nextMonth++; }
         if(day%365===0){
-          const year=day/365, capital=principal+interest, grossCapital=grossPrincipal+grossInterest;
-          rows.push({year,paid,gains:capital-paid,capital,grossCapital});
+          rows.push({year:day/365,paid,gains:capital-paid,capital,grossCapital});
         }
       }
-      if(freq==="daily"){
-        rows[rows.length-1].grossCapital=grossPrincipal;
-      }
-    }else{
-      const periodic=Math.pow(1+netAnnual,1/(freq==="monthly"?12:1))-1;
-      const grossPeriodic=Math.pow(1+grossAnnual,1/(freq==="monthly"?12:1))-1;
+    } else {
+      const periodsPerYear=freq==="monthly"?12:1;
+      const periodicRate=netAnnual/periodsPerYear;
+      const grossPeriodicRate=grossAnnual/periodsPerYear;
       for(let m=1;m<=months;m++){
-        if(freq==="monthly" || (freq==="annual" && m%12===0)){
-          principal*=1+periodic; grossPrincipal*=1+grossPeriodic;
+        if(freq==="annual" && m%12===1){
+          capital*=1+periodicRate;
+          grossCapital*=1+grossPeriodicRate;
+        } else if(freq==="monthly"){
+          capital*=1+periodicRate;
+          grossCapital*=1+grossPeriodicRate;
         }
         addPayment(m);
         if(m%12===0){
-          const year=m/12;
-          rows.push({year,paid,gains:principal-paid,capital:principal,grossCapital:grossPrincipal});
+          rows.push({year:m/12,paid,gains:capital-paid,capital,grossCapital});
         }
       }
     }
+
     const final=rows[rows.length-1];
     return {rows,capital:final.capital,paid,gains:final.capital-paid,grossCapital:final.grossCapital};
   }
@@ -206,6 +227,8 @@
     const capital=result.capital,paid=result.paid,gains=result.gains;
     const real=capital/Math.pow(1+I/100,Y);
     const feeImpact=Math.max(0,gross.capital-capital);
+    const simpleCapital=simulate(C,V,R,F,Y,H,"never").capital;
+    const capitalizationEffect=Math.max(0,capital-simpleCapital);
     const altMonthly=simulate(C,V+50,R,F,Y,H,freq).capital;
     const altRate=simulate(C,V,R+1,F,Y,H,freq).capital;
     const crossover=result.rows.find(r=>r.gains>r.paid-C);
@@ -218,7 +241,7 @@
     $("multiple").textContent=(paid>0?capital/paid:0).toLocaleString("fr-FR",{maximumFractionDigits:2})+"×";
     $("take-final").textContent=money(capital);
     $("take-gains").textContent=money(gains);
-    $("take-effect").textContent=money(Math.max(0,gains));
+    $("take-effect").textContent=money(capitalizationEffect);
     $("scenario-monthly").textContent="+"+money(Math.max(0,altMonthly-capital));
     $("scenario-rate").textContent="+"+money(Math.max(0,altRate-capital));
     $("crossover").textContent=crossover
