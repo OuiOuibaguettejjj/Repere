@@ -65,6 +65,7 @@
 <div class="field"><label for="rendement">Rendement annuel (%)</label><input id="rendement" type="number" min="0" max="100" step="0.1" value="7"></div>
 <div class="field"><label for="duree">Durée (années)</label><input id="duree" type="number" min="1" max="100" step="1" value="20"></div>
 </div>
+<div class="field"><label for="frequence">Composition des intérêts</label><select id="frequence"><option value="daily">Quotidienne</option><option value="monthly" selected>Mensuelle</option><option value="annual">Annuelle</option><option value="never">Jamais (intérêts simples)</option></select></div>
 <details>
 <summary>Paramètres avancés</summary>
 <div class="row">
@@ -72,7 +73,7 @@
 <div class="field"><label for="hausse">Hausse annuelle du versement (%)</label><input id="hausse" type="number" min="0" max="20" step="0.1" value="0"></div>
 </div>
 <div class="field"><label for="inflation">Inflation annuelle (%)</label><input id="inflation" type="number" min="0" max="20" step="0.1" value="2"></div>
-<p class="note">Les frais réduisent le rendement utilisé dans la projection. L'inflation sert uniquement à estimer le pouvoir d'achat du capital final.</p>
+<p class="note">Les frais réduisent le rendement utilisé dans la projection. L’inflation sert uniquement à estimer le pouvoir d’achat du capital final. La fréquence de composition détermine à quelle fréquence les intérêts sont ajoutés au capital.</p>
 </details>
 <button class="button-main" id="calculate" type="button">Calculer</button>
 </section>
@@ -81,9 +82,9 @@
 <h2>Résultat après <span id="years-label">20</span> ans</h2>
 <div class="metrics">
 <div class="metric"><small>Capital final</small><strong id="final">—</strong></div>
-<div class="metric"><small>Gains cumulés</small><strong id="gains">—</strong></div>
+<div class="metric"><small>Intérêts cumulés</small><strong id="gains">—</strong></div>
 <div class="metric"><small>Total versé</small><strong id="paid">—</strong></div>
-<div class="metric"><small>Capital en euros constants</small><strong id="real">—</strong></div>
+<div class="metric"><small>Capital ajusté de l’inflation*</small><strong id="real">—</strong></div>
 <div class="metric"><small>Effet des frais</small><strong id="fees-impact">—</strong></div>
 <div class="metric"><small>Multiple du capital versé</small><strong id="multiple">—</strong></div>
 </div>
@@ -91,7 +92,7 @@
 <div class="takeaway-title">À retenir</div>
 <div class="takeaway-grid">
 <div class="takeaway-item"><small>Capital final</small><strong id="take-final">—</strong></div>
-<div class="takeaway-item"><small>Gains</small><strong id="take-gains">—</strong></div>
+<div class="takeaway-item"><small>Intérêts</small><strong id="take-gains">—</strong></div>
 <div class="takeaway-item"><small>Effet de la capitalisation</small><strong id="take-effect">—</strong></div>
 </div>
 </div>
@@ -121,12 +122,13 @@
 
 <details class="breakdown">
 <summary>Voir le détail année par année</summary>
-<div class="table-wrap"><table><thead><tr><th>Année</th><th>Versé cumulés</th><th>Gains cumulés</th><th>Capital</th></tr></thead><tbody id="breakdown"></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Année</th><th>Versé cumulés</th><th>Intérêts cumulés</th><th>Capital</th></tr></thead><tbody id="breakdown"></tbody></table></div>
 </details>
 
 <div class="formula">
 <strong>Hypothèses et limites</strong>
-<p>Capitalisation mensuelle et versements en fin de mois. Le rendement annuel est supposé constant et les frais sont appliqués comme une réduction du rendement annuel. L'inflation est utilisée pour convertir le capital final en euros constants.</p>
+<p>Versements en fin de mois. Le rendement annuel est supposé constant et les frais sont appliqués comme une réduction du rendement annuel. La fréquence choisie détermine la composition des intérêts. Avec « Jamais », les intérêts sont simples et ne produisent pas eux-mêmes d’intérêts. L’inflation est utilisée pour convertir le capital final en pouvoir d’achat actuel.</p>
+<p class="note">* Capital ajusté de l’inflation : estimation de la valeur du capital final en pouvoir d’achat actuel, en tenant compte du taux d’inflation indiqué.</p>
 <p>Il s'agit d'une projection mathématique, pas d'une prévision de performance. Les rendements réels peuvent varier et les résultats dépendent notamment du placement, de la fiscalité et des frais effectivement supportés. La fiscalité n'est pas intégrée car elle dépend de l'enveloppe utilisée (par exemple PEA, compte-titres ou assurance-vie).</p>
 </div>
 </div>
@@ -140,6 +142,7 @@
   const money=v=>Number(v).toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0});
   const pct=v=>Number(v).toLocaleString("fr-FR",{maximumFractionDigits:1})+" %";
   const inputs=["capital","versement","rendement","duree","frais","hausse","inflation"].map($);
+  const frequency=$("frequence");
 
   function value(el){return Number(el.value);}
   function calculate(){
@@ -148,20 +151,30 @@
     if(![C,V,R,Y,F,H,I].every(Number.isFinite)||C<0||V<0||R<0||Y<1||Y>100||F<0||H<0||I<0||F>20||H>20||I>20){
       $("final").textContent="Valeurs invalides"; return;
     }
-    const months=Math.round(Y*12), netAnnual=Math.max(-99.99,R-F), monthlyRate=netAnnual/100/12;
+    const months=Math.round(Y*12), netAnnual=Math.max(-99.99,R-F), freq=frequency.value;
+    const periodsPerYear=freq==="daily"?365:freq==="monthly"?12:freq==="annual"?1:0;
+    const periodicRate=periodsPerYear?Math.pow(1+netAnnual/100,1/periodsPerYear)-1:0;
+    const grossPeriodicRate=periodsPerYear?Math.pow(1+R/100,1/periodsPerYear)-1:0;
     let capital=C, paid=C, grossCapital=C, rows=[{year:0,paid:C,gains:0,capital:C}], crossover=null;
-    for(let m=1;m<=months;m++){
-      const year=Math.ceil(m/12);
-      const monthlyPayment=V*Math.pow(1+H/100,year-1);
-      capital+=monthlyPayment;
-      paid+=monthlyPayment;
-      capital*=1+monthlyRate;
-      const grossRate=R/100/12;
-      grossCapital=(grossCapital+monthlyPayment)*(1+grossRate);
-      if(m%12===0){
-        const gains=capital-paid;
-        rows.push({year:m/12,paid,gains,capital});
-        if(!crossover&&gains>paid-C)crossover=m/12;
+    if(freq==="never"){
+      for(let m=1;m<=months;m++){
+        const year=Math.ceil(m/12), monthlyPayment=V*Math.pow(1+H/100,year-1);
+        const elapsed=(months-m+1)/12;
+        paid+=monthlyPayment;
+        capital+=monthlyPayment + monthlyPayment*(netAnnual/100)*elapsed;
+        grossCapital+=monthlyPayment + monthlyPayment*(R/100)*elapsed;
+        if(m%12===0){ const gains=capital-paid; rows.push({year:m/12,paid,gains,capital}); if(!crossover&&gains>paid-C)crossover=m/12; }
+      }
+      capital+=C*(netAnnual/100)*Y; grossCapital+=C*(R/100)*Y;
+      rows=rows.map((r,i)=>i===rows.length-1?{...r,capital, gains:capital-r.paid}:r);
+    } else {
+      for(let m=1;m<=months;m++){
+        const year=Math.ceil(m/12), monthlyPayment=V*Math.pow(1+H/100,year-1);
+        capital+=monthlyPayment; paid+=monthlyPayment; grossCapital+=monthlyPayment;
+        if(freq==="monthly"){ capital*=1+periodicRate; grossCapital*=1+grossPeriodicRate; }
+        else if(freq==="annual" && m%12===0){ capital*=1+periodicRate; grossCapital*=1+grossPeriodicRate; }
+        else if(freq==="daily"){ const dailyRate=periodicRate; capital*=Math.pow(1+dailyRate,365/12); grossCapital*=Math.pow(1+grossPeriodicRate,365/12); }
+        if(m%12===0){ const gains=capital-paid; rows.push({year:m/12,paid,gains,capital}); if(!crossover&&gains>paid-C)crossover=m/12; }
       }
     }
     const gains=capital-paid, real=capital/Math.pow(1+I/100,Y);
@@ -176,24 +189,30 @@
     $("take-final").textContent=money(capital);
     $("take-gains").textContent=money(gains);
     $("take-effect").textContent=money(Math.max(0,gains));
-    const altMonthly=project(C,V+50,R,Y,F,H);
-    const altRate=project(C,V,R+1,Y,F,H);
+    const altMonthly=project(C,V+50,R,Y,F,H,freq);
+    const altRate=project(C,V,R+1,Y,F,H,freq);
     $("scenario-monthly").textContent="+"+money(Math.max(0,altMonthly-capital));
     $("scenario-rate").textContent="+"+money(Math.max(0,altRate-capital));
     $("crossover").textContent=crossover
       ?"À partir d'environ "+crossover+" ans, les gains cumulés dépassent les sommes versées depuis le départ."
-      :"Avec ces paramètres, les gains cumulés ne dépassent pas encore les sommes versées sur la durée choisie.";
+      :"Avec ces paramètres, les intérêts cumulés ne dépassent pas encore les sommes versées sur la durée choisie.";
     drawChart(rows);
     $("breakdown").innerHTML=rows.slice(1).map(r=>"<tr><td>"+r.year+"</td><td>"+money(r.paid)+"</td><td>"+money(r.gains)+"</td><td>"+money(r.capital)+"</td></tr>").join("");
   }
 
-  function project(C,V,R,Y,F,H){
-    const months=Math.round(Y*12), rate=Math.max(-99.99,R-F)/100/12;
+  function project(C,V,R,Y,F,H,freq){
+    const months=Math.round(Y*12), net=Math.max(-99.99,R-F), ppy=freq==="daily"?365:freq==="monthly"?12:freq==="annual"?1:0;
     let capital=C;
+    if(freq==="never"){
+      for(let m=1;m<=months;m++){const year=Math.ceil(m/12),payment=V*Math.pow(1+H/100,year-1);capital+=payment+payment*(net/100)*((months-m+1)/12);}
+      return capital+C*(net/100)*Y;
+    }
+    const rate=Math.pow(1+net/100,1/ppy)-1;
     for(let m=1;m<=months;m++){
-      const year=Math.ceil(m/12);
-      capital+=V*Math.pow(1+H/100,year-1);
-      capital*=1+rate;
+      const year=Math.ceil(m/12); capital+=V*Math.pow(1+H/100,year-1);
+      if(freq==="monthly") capital*=1+rate;
+      else if(freq==="annual"&&m%12===0) capital*=1+rate;
+      else if(freq==="daily") capital*=Math.pow(1+rate,365/12);
     }
     return capital;
   }
@@ -221,7 +240,7 @@
       circle.style.opacity="0";circle.style.cursor="pointer";
       circle.addEventListener("mouseenter",()=>{
         circle.style.opacity="1";
-        tooltip.innerHTML="<strong>"+r.year+" an"+(r.year>1?"s":"")+"</strong><span>Capital : "+fmt(r.capital)+"</span><span>Versé : "+fmt(r.paid)+"</span><span>Gains : "+fmt(r.gains)+"</span>";
+        tooltip.innerHTML="<strong>"+r.year+" an"+(r.year>1?"s":"")+"</strong><span>Capital : "+fmt(r.capital)+"</span><span>Versé : "+fmt(r.paid)+"</span><span>Intérêts : "+fmt(r.gains)+"</span>";
         const shell=svg.parentElement.getBoundingClientRect(),rect=svg.getBoundingClientRect();
         tooltip.style.left=((cx/W)*rect.width+(rect.left-shell.left))+"px";
         tooltip.style.top=((cy/H)*rect.height)+"px";
