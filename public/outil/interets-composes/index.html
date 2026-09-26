@@ -73,7 +73,7 @@
 <div class="field"><label for="hausse">Hausse annuelle du versement (%)</label><input id="hausse" type="number" min="0" max="20" step="0.1" value="0"></div>
 </div>
 <div class="field"><label for="inflation">Inflation annuelle (%)</label><input id="inflation" type="number" min="0" max="20" step="0.1" value="2"></div>
-<p class="note">Les frais réduisent le rendement utilisé dans la projection. L’inflation sert uniquement à estimer le pouvoir d’achat du capital final. La fréquence de composition détermine à quelle fréquence les intérêts sont ajoutés au capital. À taux annuel identique, une composition plus fréquente produit généralement davantage d’intérêts lorsque les intérêts restent investis.</p>
+<p class="note">Les frais réduisent le rendement utilisé dans la projection. L’inflation sert uniquement à estimer le pouvoir d’achat du capital final. La fréquence de composition détermine à quelle fréquence les intérêts sont ajoutés au capital : plus ils sont composés souvent, plus les intérêts déjà acquis peuvent eux-mêmes produire des intérêts.</p>
 </details>
 <button class="button-main" id="calculate" type="button">Calculer</button>
 </section>
@@ -93,7 +93,7 @@
 <div class="takeaway-grid">
 <div class="takeaway-item"><small>Capital final</small><strong id="take-final">—</strong></div>
 <div class="takeaway-item"><small>Intérêts</small><strong id="take-gains">—</strong></div>
-<div class="takeaway-item"><small>Effet de la capitalisation</small><strong id="take-effect">—</strong><span class="takeaway-help">Supplément de capital obtenu grâce aux intérêts qui produisent eux-mêmes des intérêts.</span></div>
+<div class="takeaway-item"><small>Gain lié à la capitalisation</small><strong id="take-effect">—</strong><span class="takeaway-help">Différence entre le capital final avec intérêts composés et celui obtenu avec des intérêts simples, à paramètres identiques.</span></div>
 </div>
 </div>
 <div class="scenario">
@@ -150,62 +150,84 @@
     const grossAnnual=R/100;
     const months=Math.round(Y*12);
     const rows=[{year:0,paid:C,gains:0,capital:C}];
-    let capital=C, grossCapital=C, paid=C;
 
-    const addPayment=m=>{
+    const paymentAtMonth=m=>{
       const year=Math.ceil(m/12);
-      const payment=V*Math.pow(1+H/100,year-1);
-      capital+=payment;
-      grossCapital+=payment;
-      paid+=payment;
+      return V*Math.pow(1+H/100,year-1);
     };
+
+    const paidAtMonth=m=>{
+      let total=C;
+      for(let i=1;i<=m;i++) total+=paymentAtMonth(i);
+      return total;
+    };
+
+    const simpleAtMonth=(rate,m)=>{
+      let total=C*(1+rate*(m/12));
+      for(let i=1;i<=m;i++){
+        const payment=paymentAtMonth(i);
+        total+=payment*(1+rate*((m-i)/12));
+      }
+      return total;
+    };
+
+    let capital=C, grossCapital=C, paid=C;
 
     if(freq==="never"){
       for(let m=1;m<=months;m++){
-        const year=Math.ceil(m/12);
-        const payment=V*Math.pow(1+H/100,year-1);
-        const remainingMonths=months-m+1;
-        capital+=payment;
-        grossCapital+=payment;
+        const payment=paymentAtMonth(m);
         paid+=payment;
-        capital+=payment*netAnnual/12*remainingMonths;
-        grossCapital+=payment*grossAnnual/12*remainingMonths;
         if(m%12===0){
+          capital=simpleAtMonth(netAnnual,m);
+          grossCapital=simpleAtMonth(grossAnnual,m);
           rows.push({year:m/12,paid,gains:capital-paid,capital,grossCapital});
         }
       }
-      capital+=C*netAnnual*Y;
-      grossCapital+=C*grossAnnual*Y;
-      const final=rows[rows.length-1];
-      final.capital=capital;
-      final.grossCapital=grossCapital;
-      final.gains=capital-final.paid;
     } else if(freq==="daily"){
       const dailyRate=netAnnual/365;
       const grossDailyRate=grossAnnual/365;
-      let nextMonth=1;
+      let nextPaymentDay=1;
       for(let day=1;day<=Math.round(Y*365);day++){
         capital*=1+dailyRate;
         grossCapital*=1+grossDailyRate;
-        const target=Math.round(nextMonth*365/12);
-        if(nextMonth<=months && day===target){ addPayment(nextMonth); nextMonth++; }
+        const target=Math.round(nextPaymentDay*365/12);
+        if(nextPaymentDay<=months && day===target){
+          const payment=paymentAtMonth(nextPaymentDay);
+          capital+=payment;
+          grossCapital+=payment;
+          paid+=payment;
+          nextPaymentDay++;
+        }
         if(day%365===0){
           rows.push({year:day/365,paid,gains:capital-paid,capital,grossCapital});
         }
       }
-    } else {
-      const periodsPerYear=freq==="monthly"?12:1;
-      const periodicRate=netAnnual/periodsPerYear;
-      const grossPeriodicRate=grossAnnual/periodsPerYear;
+    } else if(freq==="monthly"){
+      const periodicRate=netAnnual/12;
+      const grossPeriodicRate=grossAnnual/12;
       for(let m=1;m<=months;m++){
-        if(freq==="annual" && m%12===1){
-          capital*=1+periodicRate;
-          grossCapital*=1+grossPeriodicRate;
-        } else if(freq==="monthly"){
-          capital*=1+periodicRate;
-          grossCapital*=1+grossPeriodicRate;
+        capital*=1+periodicRate;
+        grossCapital*=1+grossPeriodicRate;
+        const payment=paymentAtMonth(m);
+        capital+=payment;
+        grossCapital+=payment;
+        paid+=payment;
+        if(m%12===0){
+          rows.push({year:m/12,paid,gains:capital-paid,capital,grossCapital});
         }
-        addPayment(m);
+      }
+    } else {
+      // Annual composition: interest is added once per year, before the
+      // final monthly payment of that year (payments are made at month-end).
+      for(let m=1;m<=months;m++){
+        if(m%12===0){
+          capital*=1+netAnnual;
+          grossCapital*=1+grossAnnual;
+        }
+        const payment=paymentAtMonth(m);
+        capital+=payment;
+        grossCapital+=payment;
+        paid+=payment;
         if(m%12===0){
           rows.push({year:m/12,paid,gains:capital-paid,capital,grossCapital});
         }
@@ -215,7 +237,6 @@
     const final=rows[rows.length-1];
     return {rows,capital:final.capital,paid,gains:final.capital-paid,grossCapital:final.grossCapital};
   }
-
   function calculate(){
     const C=value($("capital")),V=value($("versement")),R=value($("rendement")),Y=value($("duree"));
     const F=value($("frais")),H=value($("hausse")),I=value($("inflation")),freq=frequency.value;
